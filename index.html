@@ -16,7 +16,8 @@
 <body>
   <main class="app">
     <section class="panel controls">
-      <h1>PhotoColors-Web V2.5</h1>
+      <h1>PhotoColors静态版v11</h1>
+      <p class="desc">固定上下1:1。上半部分为取色背景与地点/时间，下半部分为原图。当前版本继续补中文字体预设，重点是让中文也有更像原版的选择。</p>
 
       <label class="field upload-field">
         <span>上传照片</span>
@@ -76,6 +77,26 @@
         <input id="lineGapInput" type="range" min="0.3" max="2.5" step="0.01" value="1.00" />
       </label>
 
+      <div class="dual-fields">
+        <label class="field compact-field">
+          <span>字色风格</span>
+          <select id="toneSelect">
+            <option value="elegant" selected>淡雅</option>
+            <option value="balanced">平衡</option>
+            <option value="vivid">鲜明</option>
+          </select>
+        </label>
+
+        <label class="field compact-field">
+          <span>描边风格</span>
+          <select id="outlineSelect">
+            <option value="none">无描边</option>
+            <option value="soft" selected>柔和描边</option>
+            <option value="clear">清晰描边</option>
+          </select>
+        </label>
+      </div>
+
       <div class="actions">
         <button id="autoColorBtn" type="button">重新取色</button>
         <button id="downloadBtn" type="button" disabled>导出PNG</button>
@@ -102,6 +123,7 @@
         </div>
       </div>
 
+      <p class="note">说明：导出图宽度和下半部分原图一致，总高度固定为原图高度的2倍。导出PNG是重新编码的新文件，不会原样保留原文件的全部元数据。</p>
     </section>
 
     <section class="panel preview-panel">

@@ -260,3 +260,14 @@ button + button {
     grid-template-columns: 1fr;
   }
 }
+
+
+.dual-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.compact-field {
+  margin-bottom: 14px;
+}

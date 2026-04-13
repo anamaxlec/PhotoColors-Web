@@ -10,6 +10,8 @@ const lineGapInput = document.getElementById('lineGapInput');
 const locationScaleValue = document.getElementById('locationScaleValue');
 const timeScaleValue = document.getElementById('timeScaleValue');
 const lineGapValue = document.getElementById('lineGapValue');
+const toneSelect = document.getElementById('toneSelect');
+const outlineSelect = document.getElementById('outlineSelect');
 const liveTextPreview = document.getElementById('liveTextPreview');
 const autoColorBtn = document.getElementById('autoColorBtn');
 const downloadBtn = document.getElementById('downloadBtn');
@@ -390,6 +392,47 @@ function refineTypographyColor(accent, bg) {
   return pushContrast(mixed, bg, targetRatio);
 }
 
+function getToneAdjustedTextColor(base, bg, mode = 'elegant') {
+  const baseHsl = rgbToHsl(base.r, base.g, base.b);
+  const bgLum = luminance(bg);
+
+  if (mode === 'vivid') {
+    const vivid = hslToRgb(
+      baseHsl.h,
+      clamp(baseHsl.s * 1.08 + 0.03, 0.2, 0.72),
+      bgLum > 0.62 ? clamp(baseHsl.l * 0.9, 0.16, 0.42) : clamp(baseHsl.l * 1.04, 0.5, 0.84),
+    );
+    return pushContrast(vivid, bg, bgLum > 0.62 ? 3.35 : 3.1);
+  }
+
+  if (mode === 'balanced') {
+    return pushContrast(base, bg, bgLum > 0.62 ? 3.05 : 2.9);
+  }
+
+  const elegant = hslToRgb(
+    baseHsl.h,
+    clamp(baseHsl.s * 0.78, 0.12, 0.52),
+    bgLum > 0.62 ? clamp(baseHsl.l * 0.96 + 0.02, 0.2, 0.46) : clamp(baseHsl.l * 1.02 + 0.02, 0.46, 0.82),
+  );
+  const softened = mix(elegant, bg, 0.14);
+  return pushContrast(softened, bg, bgLum > 0.62 ? 2.55 : 2.45);
+}
+
+function getOutlineStyle(textColor, bg, mode = 'soft') {
+  if (mode === 'none') {
+    return { enabled: false, color: { r: 0, g: 0, b: 0 }, alpha: 0, widthFactor: 0 };
+  }
+
+  const base = mix(textColor, bg, mode === 'clear' ? 0.42 : 0.6);
+  const adjusted = pushContrast(base, bg, mode === 'clear' ? 1.45 : 1.18);
+  return {
+    enabled: true,
+    color: adjusted,
+    alpha: mode === 'clear' ? 0.28 : 0.16,
+    widthFactor: mode === 'clear' ? 0.065 : 0.042,
+  };
+}
+
 function extractPaletteCandidates(img) {
   const temp = document.createElement('canvas');
   const ctx = temp.getContext('2d', { willReadFrequently: true });
@@ -569,13 +612,34 @@ function fillTrackedText(ctx, text, centerX, baselineY, trackingPx = 0) {
   const units = splitTextUnits(text);
   const totalWidth = measureTrackedText(ctx, text, trackingPx);
   let x = centerX - totalWidth / 2;
+  const prevAlign = ctx.textAlign;
+  ctx.textAlign = 'left';
   for (const unit of units) {
     ctx.fillText(unit, x, baselineY);
     x += ctx.measureText(unit).width + trackingPx;
   }
+  ctx.textAlign = prevAlign;
 }
 
-function drawTextLayer(targetCtx, canvasW, topH, textColor, parts) {
+function strokeTrackedText(ctx, text, centerX, baselineY, trackingPx = 0) {
+  if (!text) return;
+  if (!trackingPx) {
+    ctx.strokeText(text, centerX, baselineY);
+    return;
+  }
+  const units = splitTextUnits(text);
+  const totalWidth = measureTrackedText(ctx, text, trackingPx);
+  let x = centerX - totalWidth / 2;
+  const prevAlign = ctx.textAlign;
+  ctx.textAlign = 'left';
+  for (const unit of units) {
+    ctx.strokeText(unit, x, baselineY);
+    x += ctx.measureText(unit).width + trackingPx;
+  }
+  ctx.textAlign = prevAlign;
+}
+
+function drawTextLayer(targetCtx, canvasW, topH, textColor, parts, outlineStyle) {
   const scale = 2;
   const textCanvas = document.createElement('canvas');
   textCanvas.width = Math.max(1, Math.round(canvasW * scale));
@@ -587,6 +651,9 @@ function drawTextLayer(targetCtx, canvasW, topH, textColor, parts) {
   tctx.fillStyle = `rgb(${textColor.r}, ${textColor.g}, ${textColor.b})`;
   tctx.textAlign = 'center';
   tctx.textBaseline = 'alphabetic';
+  tctx.lineJoin = 'round';
+  tctx.lineCap = 'round';
+  tctx.miterLimit = 2;
 
   const totalTextHeight =
     parts.reduce((sum, part) => sum + part.height, 0) +
@@ -598,6 +665,13 @@ function drawTextLayer(targetCtx, canvasW, topH, textColor, parts) {
     tctx.font = part.font;
     const baselineY = currentTop + part.height * 0.8;
     const trackingPx = (part.trackingEm || 0) * part.height;
+
+    if (outlineStyle?.enabled) {
+      tctx.strokeStyle = `rgba(${outlineStyle.color.r}, ${outlineStyle.color.g}, ${outlineStyle.color.b}, ${outlineStyle.alpha})`;
+      tctx.lineWidth = Math.max(0.8, part.height * outlineStyle.widthFactor);
+      strokeTrackedText(tctx, part.text, canvasW / 2, baselineY, trackingPx);
+    }
+
     fillTrackedText(tctx, part.text, canvasW / 2, baselineY, trackingPx);
     currentTop += part.height + (part.gapAfter || 0);
   }
@@ -673,7 +747,8 @@ async function drawComposition() {
   await ensureSelectedFontsReady();
 
   const bg = currentPalette.background;
-  const text = currentPalette.text;
+  const text = getToneAdjustedTextColor(currentPalette.text, currentPalette.background, toneSelect.value);
+  const outlineStyle = getOutlineStyle(text, bg, outlineSelect.value);
 
   configureContextQuality(renderCtx);
   renderCtx.save();
@@ -716,7 +791,7 @@ async function drawComposition() {
   }
 
   if (textBlockParts.length) {
-    drawTextLayer(renderCtx, canvasW, topH, text, textBlockParts);
+    drawTextLayer(renderCtx, canvasW, topH, text, textBlockParts, outlineStyle);
   }
 
   renderCtx.restore();
@@ -767,6 +842,8 @@ bindLiveRedraw(fontFamilySelect, 'change');
 bindLiveRedraw(locationScaleInput);
 bindLiveRedraw(timeScaleInput);
 bindLiveRedraw(lineGapInput);
+bindLiveRedraw(toneSelect, 'change');
+bindLiveRedraw(outlineSelect, 'change');
 autoColorBtn.addEventListener('click', refreshPalette);
 
 updateControlReadout();
