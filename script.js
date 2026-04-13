@@ -22,47 +22,107 @@ const textHexValue = document.getElementById('textHexValue');
 const sizeInfo = document.getElementById('sizeInfo');
 
 const FONT_PRESETS = {
+  'pingfang-original': {
+    location: '640 1px "PingFang SC", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif',
+    time: '590 1px "PingFang SC", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif',
+    locationTracking: -0.018,
+    timeTracking: 0.01,
+    sample: '杭州市 12:59 PM',
+  },
+  'pingfang-soft': {
+    location: '600 1px "PingFang SC", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif',
+    time: '540 1px "PingFang SC", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif',
+    locationTracking: -0.012,
+    timeTracking: 0.012,
+    sample: '杭州市 12:59 PM',
+  },
+  'harmony-cn': {
+    location: '650 1px "HarmonyOS Sans SC", "HarmonyOS Sans", "PingFang SC", "Noto Sans SC", sans-serif',
+    time: '580 1px "HarmonyOS Sans SC", "HarmonyOS Sans", "PingFang SC", "Noto Sans SC", sans-serif',
+    locationTracking: -0.014,
+    timeTracking: 0.01,
+    sample: '杭州市 12:59 PM',
+  },
+  'misans-cn': {
+    location: '650 1px "MiSans", "PingFang SC", "Noto Sans SC", sans-serif',
+    time: '580 1px "MiSans", "PingFang SC", "Noto Sans SC", sans-serif',
+    locationTracking: -0.02,
+    timeTracking: 0.008,
+    sample: '杭州市 12:59 PM',
+  },
+  'puhuiti-cn': {
+    location: '650 1px "Alibaba PuHuiTi 3.0", "Alibaba PuHuiTi", "PingFang SC", "Noto Sans SC", sans-serif',
+    time: '580 1px "Alibaba PuHuiTi 3.0", "Alibaba PuHuiTi", "PingFang SC", "Noto Sans SC", sans-serif',
+    locationTracking: -0.014,
+    timeTracking: 0.012,
+    sample: '杭州市 12:59 PM',
+  },
+  'sourcehan-cn': {
+    location: '650 1px "Source Han Sans SC", "Source Han Sans CN", "Noto Sans SC", "PingFang SC", sans-serif',
+    time: '570 1px "Source Han Sans SC", "Source Han Sans CN", "Noto Sans SC", "PingFang SC", sans-serif',
+    locationTracking: -0.012,
+    timeTracking: 0.014,
+    sample: '杭州市 12:59 PM',
+  },
   'apple-cn': {
-    location: '700 1px -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif',
-    time: '600 1px -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif',
+    location: '640 1px -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif',
+    time: '570 1px -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif',
+    locationTracking: -0.014,
+    timeTracking: 0.012,
     sample: '杭州市 12:59 PM',
   },
   'noto-cn': {
+    locationTracking: -0.008,
+    timeTracking: 0.014,
     location: '700 1px "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
     time: '600 1px "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
     sample: '杭州市 12:59 PM',
   },
   'inter': {
+    locationTracking: -0.008,
+    timeTracking: 0.014,
     location: '700 1px "Inter", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
     time: '600 1px "Inter", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
     sample: 'Nyhavn 12:59 PM 杭州市',
   },
   'jakarta': {
+    locationTracking: -0.008,
+    timeTracking: 0.014,
     location: '700 1px "Plus Jakarta Sans", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
     time: '600 1px "Plus Jakarta Sans", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
     sample: 'Nyhavn 12:59 PM 杭州市',
   },
   'manrope': {
+    locationTracking: -0.008,
+    timeTracking: 0.014,
     location: '700 1px "Manrope", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
     time: '600 1px "Manrope", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
     sample: 'Nyhavn 12:59 PM 杭州市',
   },
   'outfit': {
+    locationTracking: -0.008,
+    timeTracking: 0.014,
     location: '700 1px "Outfit", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
     time: '600 1px "Outfit", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
     sample: 'Nyhavn 12:59 PM 杭州市',
   },
   'montserrat': {
+    locationTracking: -0.008,
+    timeTracking: 0.014,
     location: '700 1px "Montserrat", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
     time: '600 1px "Montserrat", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
     sample: 'Nyhavn 12:59 PM 杭州市',
   },
   'nunito': {
+    locationTracking: -0.008,
+    timeTracking: 0.014,
     location: '700 1px "Nunito Sans", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
     time: '600 1px "Nunito Sans", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
     sample: 'Nyhavn 12:59 PM 杭州市',
   },
   'ibm-plex': {
+    locationTracking: -0.008,
+    timeTracking: 0.014,
     location: '700 1px "IBM Plex Sans", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
     time: '600 1px "IBM Plex Sans", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
     sample: 'Nyhavn 12:59 PM 杭州市',
@@ -476,7 +536,7 @@ function computeLayout(img) {
 }
 
 function getFontPreset() {
-  return FONT_PRESETS[fontFamilySelect.value] || FONT_PRESETS['apple-cn'];
+  return FONT_PRESETS[fontFamilySelect.value] || FONT_PRESETS['pingfang-original'];
 }
 
 function applyFontTemplate(template, size) {
@@ -486,6 +546,33 @@ function applyFontTemplate(template, size) {
 function configureContextQuality(ctx) {
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
+}
+
+function splitTextUnits(text) {
+  return Array.from(text || '');
+}
+
+function measureTrackedText(ctx, text, trackingPx = 0) {
+  const units = splitTextUnits(text);
+  if (!units.length) return 0;
+  let width = 0;
+  for (const unit of units) width += ctx.measureText(unit).width;
+  return width + Math.max(0, units.length - 1) * trackingPx;
+}
+
+function fillTrackedText(ctx, text, centerX, baselineY, trackingPx = 0) {
+  if (!text) return;
+  if (!trackingPx) {
+    ctx.fillText(text, centerX, baselineY);
+    return;
+  }
+  const units = splitTextUnits(text);
+  const totalWidth = measureTrackedText(ctx, text, trackingPx);
+  let x = centerX - totalWidth / 2;
+  for (const unit of units) {
+    ctx.fillText(unit, x, baselineY);
+    x += ctx.measureText(unit).width + trackingPx;
+  }
 }
 
 function drawTextLayer(targetCtx, canvasW, topH, textColor, parts) {
@@ -510,7 +597,8 @@ function drawTextLayer(targetCtx, canvasW, topH, textColor, parts) {
   for (const part of parts) {
     tctx.font = part.font;
     const baselineY = currentTop + part.height * 0.8;
-    tctx.fillText(part.text, canvasW / 2, baselineY);
+    const trackingPx = (part.trackingEm || 0) * part.height;
+    fillTrackedText(tctx, part.text, canvasW / 2, baselineY, trackingPx);
     currentTop += part.height + (part.gapAfter || 0);
   }
 
@@ -614,6 +702,7 @@ async function drawComposition() {
       font: applyFontTemplate(preset.location, locationFontSize),
       height: locationFontSize,
       gapAfter: showTime ? lineGap : 0,
+      trackingEm: preset.locationTracking || 0,
     });
   }
   if (showTime) {
@@ -622,6 +711,7 @@ async function drawComposition() {
       font: applyFontTemplate(preset.time, timeFontSize),
       height: timeFontSize,
       gapAfter: 0,
+      trackingEm: preset.timeTracking || 0,
     });
   }
 
