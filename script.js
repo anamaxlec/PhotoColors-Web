@@ -291,6 +291,45 @@ function stylizePosterAccent(base, bg, profile) {
     : hslToRgb(fallbackHue, clamp(profile.targetSat + 0.08, 0, 0.88), 0.24);
 }
 
+function pushContrast(color, bg, minRatio) {
+  if (contrastRatio(color, bg) >= minRatio) return color;
+
+  const hsl = rgbToHsl(color.r, color.g, color.b);
+  const preferLighter = luminance(color) >= luminance(bg);
+
+  for (let i = 1; i <= 18; i += 1) {
+    const delta = i * 0.025;
+    const candidate = hslToRgb(
+      hsl.h,
+      hsl.s,
+      preferLighter ? clamp(hsl.l + delta, 0, 0.97) : clamp(hsl.l - delta, 0.08, 1),
+    );
+    if (contrastRatio(candidate, bg) >= minRatio) return candidate;
+  }
+
+  return color;
+}
+
+function refineTypographyColor(accent, bg) {
+  const accentHsl = rgbToHsl(accent.r, accent.g, accent.b);
+  const bgHsl = rgbToHsl(bg.r, bg.g, bg.b);
+  const bgLum = luminance(bg);
+  const accentLum = luminance(accent);
+
+  const toned = hslToRgb(
+    accentHsl.h,
+    clamp(accentHsl.s * 0.84, 0.18, 0.62),
+    accentLum >= bgLum
+      ? clamp(accentHsl.l * 0.98 + 0.01, 0.54, 0.88)
+      : clamp(accentHsl.l * 0.92 + 0.02, 0.16, 0.44),
+  );
+
+  const blendAmount = bgHsl.s < 0.14 ? 0.14 : 0.17;
+  const mixed = mix(toned, bg, blendAmount);
+  const targetRatio = bgLum > 0.62 ? 3.25 : 3.0;
+  return pushContrast(mixed, bg, targetRatio);
+}
+
 function extractPaletteCandidates(img) {
   const temp = document.createElement('canvas');
   const ctx = temp.getContext('2d', { willReadFrequently: true });
@@ -408,7 +447,7 @@ function chooseTextColor(candidates, bg) {
       : hslToRgb(fallbackHue, Math.max(profile.targetSat, 0.56), 0.32);
   }
 
-  return stylizePosterAccent(best, bg, profile);
+  return refineTypographyColor(stylizePosterAccent(best, bg, profile), bg);
 }
 
 function refreshPalette() {
