@@ -12,9 +12,8 @@
 <body>
   <main class="app">
     <section class="panel controls">
-      <h1>PhotoColors静态版v13</h1>
-      <p class="desc">固定上下1:1。上半部分为取色背景与地点/时间，下半部分为原图。当前版本移除了额外中文字体预设，重点改回更稳的无衬线系统字体，并补充更柔和的字色与描边选项。</p>
-
+      <h1>PhotoColors-WEB</h1>
+    
       <label class="field upload-field">
         <span>上传照片</span>
         <input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp,image/heic,image/heif" />
@@ -23,12 +22,12 @@
       <div class="group-title">文字内容</div>
       <label class="field">
         <span>地点</span>
-        <input id="locationInput" type="text" placeholder="例如：Nyhavn, Copenhagen" value="Nyhavn, Copenhagen" />
+        <input id="locationInput" type="text" placeholder="例如：Fuzhou" value="Fuzhou" />
       </label>
 
       <label class="field">
         <span>时间</span>
-        <input id="timeInput" type="text" placeholder="例如：6:42 PM" value="6:42 PM" />
+        <input id="timeInput" type="text" placeholder="例如：6:00 PM" value="6:00 PM" />
       </label>
 
       <div class="toggles">
@@ -116,7 +115,6 @@
         </div>
       </div>
 
-      <p class="note">说明：导出图宽度和下半部分原图一致，总高度固定为原图高度的2倍。导出PNG是重新编码的新文件，不会原样保留原文件的全部元数据。</p>
     </section>
 
     <section class="panel preview-panel">
