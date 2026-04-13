@@ -1,133 +1,253 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-ui-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PhotoColors-WEB</title>
+  <title>PhotoColors</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=Manrope:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Nunito+Sans:wght@600;700;800&family=Montserrat:wght@600;700;800&family=IBM+Plex+Sans:wght@500;600;700&family=Noto+Sans+SC:wght@500;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Nunito+Sans:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
   <main class="app">
-    <section class="panel controls">
-      <h1>PhotoColors-WEB</h1>
-    
-      <label class="field upload-field">
-        <span>上传照片</span>
-        <input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp,image/heic,image/heif" />
-      </label>
+    <aside class="sidebar">
+      <div class="sidebar-head">
+        <div class="brand-wrap">
+          <div class="brand-mark" aria-hidden="true">
+            <span class="dot dot-a"></span>
+            <span class="dot dot-b"></span>
+            <span class="dot dot-c"></span>
+          </div>
+          <div class="brand">PhotoColors</div>
+        </div>
 
-      <div class="group-title">文字内容</div>
-      <label class="field">
-        <span>地点</span>
-        <input id="locationInput" type="text" placeholder="例如：Fuzhou" value="Fuzhou" />
-      </label>
-
-      <label class="field">
-        <span>时间</span>
-        <input id="timeInput" type="text" placeholder="例如：6:00 PM" value="6:00 PM" />
-      </label>
-
-      <div class="toggles">
-        <label class="toggle-item"><input id="showLocationInput" type="checkbox" checked />显示地点</label>
-        <label class="toggle-item"><input id="showTimeInput" type="checkbox" checked />显示时间</label>
+        <button class="icon-btn" id="themeToggle" type="button" aria-label="切换界面主题" title="切换亮色/深色界面">
+          <svg class="icon-sun" viewBox="0 0 20 20" fill="none">
+            <circle cx="10" cy="10" r="3.5" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M10 2v2M10 16v2M3.5 5.5l1.4 1.4M15.1 14.1l1.4 1.4M2 10h2M16 10h2M3.5 14.5l1.4-1.4M15.1 5.9l1.4-1.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 20 20" fill="none">
+            <path d="M17.5 10.9A7.5 7.5 0 1 1 9.1 2.5a5.8 5.8 0 0 0 8.4 8.4z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
       </div>
 
-      <div class="group-title">字体与排版</div>
-      <label class="field">
-        <span>字体选择</span>
-        <select id="fontFamilySelect">
-          <option value="apple-cn" selected>原版接近·系统无衬线</option>
-          <option value="pingfang-original">苹方紧凑版</option>
-          <option value="pingfang-soft">苹方柔和版</option>
-          <option value="noto-cn">Noto Sans SC</option>
-          <option value="inter">Inter + 中文无衬线</option>
-          <option value="jakarta">Plus Jakarta Sans + 中文无衬线</option>
-          <option value="manrope">Manrope + 中文无衬线</option>
-          <option value="outfit">Outfit + 中文无衬线</option>
-          <option value="montserrat">Montserrat + 中文无衬线</option>
-          <option value="nunito">Nunito Sans + 中文无衬线</option>
-          <option value="ibm-plex">IBM Plex Sans + 中文无衬线</option>
-        </select>
+      <label class="upload-card" for="imageUpload">
+        <div class="upload-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <polyline points="16 9 12 5 8 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="12" y1="5" x2="12" y2="17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="upload-copy">
+          <div class="upload-title">上传照片</div>
+          <div class="upload-sub">点击选择或直接拖拽 · PNG / JPG / WebP / HEIC</div>
+        </div>
       </label>
 
-      <label class="field slider-field">
-        <span>地点字号 <strong id="locationScaleValue">1.00×</strong></span>
-        <input id="locationScaleInput" type="range" min="0.6" max="1.8" step="0.01" value="1.00" />
-      </label>
-
-      <label class="field slider-field">
-        <span>时间字号 <strong id="timeScaleValue">1.00×</strong></span>
-        <input id="timeScaleInput" type="range" min="0.5" max="1.8" step="0.01" value="1.00" />
-      </label>
-
-      <label class="field slider-field">
-        <span>地点与时间间距 <strong id="lineGapValue">1.00×</strong></span>
-        <input id="lineGapInput" type="range" min="0.3" max="2.5" step="0.01" value="1.00" />
-      </label>
-
-      <div class="dual-fields">
-        <label class="field compact-field">
-          <span>字色风格</span>
-          <select id="toneSelect">
-            <option value="soft" selected>更柔和</option>
-            <option value="elegant">淡雅</option>
-            <option value="balanced">平衡</option>
-            <option value="vivid">鲜明</option>
-          </select>
-        </label>
-
-        <label class="field compact-field">
-          <span>描边风格</span>
-          <select id="outlineSelect">
-            <option value="none">无描边</option>
-            <option value="soft" selected>柔和描边</option>
-            <option value="mist">轻雾柔化</option>
-          </select>
-        </label>
-      </div>
-
-      <div class="actions">
-        <button id="autoColorBtn" type="button">重新取色</button>
-        <button id="downloadBtn" type="button" disabled>导出PNG</button>
-      </div>
-
-      <div class="live-readout">
-        <div><span>当前预览</span><strong id="liveTextPreview">Nyhavn, Copenhagen / 6:42 PM</strong></div>
-      </div>
-
-      <div class="color-grid">
-        <div class="color-row">
-          <div id="bgSwatch" class="swatch"></div>
-          <div class="color-meta">
-            <div>背景色</div>
-            <strong id="bgHexValue">#000000</strong>
+      <section class="panel-card panel-card-content">
+        <div class="panel-head panel-head-inline">
+          <div class="panel-title">文字内容</div>
+          <div class="inline-switches">
+            <label class="mini-switch" for="showLocation">
+              <input id="showLocation" type="checkbox" checked />
+              <span class="mini-track"></span>
+              <span>地点</span>
+            </label>
+            <label class="mini-switch" for="showTime">
+              <input id="showTime" type="checkbox" checked />
+              <span class="mini-track"></span>
+              <span>时间</span>
+            </label>
           </div>
         </div>
-        <div class="color-row">
-          <div id="textSwatch" class="swatch"></div>
-          <div class="color-meta">
-            <div>字体色</div>
-            <strong id="textHexValue">#000000</strong>
+
+        <div class="field-grid two-col">
+          <label class="field">
+            <span class="field-label">地点</span>
+            <input id="locationInput" type="text" value="赤柱" />
+          </label>
+
+          <label class="field">
+            <span class="field-label">时间</span>
+            <input id="timeInput" type="text" value="12:42 PM" />
+          </label>
+        </div>
+      </section>
+
+      <section class="panel-card">
+        <div class="panel-head">
+          <div class="panel-title">字体与排版</div>
+        </div>
+
+        <label class="field field-select">
+          <span class="field-label">字体</span>
+          <span class="select-wrap">
+            <select id="fontFamily">
+            <option value="apple" selected>原版接近 · 系统无衬线</option>
+            <option value="noto">Noto Sans SC</option>
+            <option value="inter">Inter + 中文回退</option>
+            <option value="jakarta">Plus Jakarta Sans + 中文回退</option>
+            <option value="manrope">Manrope + 中文回退</option>
+            <option value="outfit">Outfit + 中文回退</option>
+            <option value="montserrat">Montserrat + 中文回退</option>
+            <option value="nunito">Nunito Sans + 中文回退</option>
+            <option value="ibm">IBM Plex Sans + 中文回退</option>
+            <option value="system-soft">系统柔和版</option>
+            <option value="system-tight">系统紧凑版</option>
+            </select>
+            <svg class="select-arrow" viewBox="0 0 12 8" fill="none" aria-hidden="true"><path d="M1 1.5l5 5 5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+        </label>
+
+        <label class="slider-row">
+          <div class="slider-header">
+            <span>地点字号</span>
+            <span id="locationSizeValue">1.00×</span>
+          </div>
+          <input id="locationSize" type="range" min="0.7" max="1.6" step="0.01" value="1.00" />
+        </label>
+
+        <label class="slider-row">
+          <div class="slider-header">
+            <span>时间字号</span>
+            <span id="timeSizeValue">1.00×</span>
+          </div>
+          <input id="timeSize" type="range" min="0.7" max="1.6" step="0.01" value="1.00" />
+        </label>
+
+        <label class="slider-row">
+          <div class="slider-header">
+            <span>行间距</span>
+            <span id="gapValue">1.00×</span>
+          </div>
+          <input id="lineGap" type="range" min="0.5" max="2.2" step="0.01" value="1.00" />
+        </label>
+
+        <label class="slider-row">
+          <div class="slider-header">
+            <span>文字纵向位置</span>
+            <span id="textYValue">50%</span>
+          </div>
+          <input id="textY" type="range" min="28" max="70" step="1" value="50" />
+        </label>
+      </section>
+
+      <section class="panel-card">
+        <div class="panel-head">
+          <div class="panel-title">风格</div>
+        </div>
+
+        <div class="field-grid two-col compact-gap">
+          <label class="field field-select">
+            <span class="field-label">字色风格</span>
+            <span class="select-wrap">
+              <select id="toneMode">
+              <option value="soft">更柔和</option>
+              <option value="elegant" selected>淡雅</option>
+              <option value="balanced">平衡</option>
+              <option value="vivid">跳脱</option>
+              </select>
+              <svg class="select-arrow" viewBox="0 0 12 8" fill="none" aria-hidden="true"><path d="M1 1.5l5 5 5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+          </label>
+
+          <label class="field field-select">
+            <span class="field-label">描边风格</span>
+            <span class="select-wrap">
+              <select id="edgeMode">
+              <option value="none">无描边</option>
+              <option value="soft" selected>柔和描边</option>
+              <option value="mist">轻雾柔化</option>
+              </select>
+              <svg class="select-arrow" viewBox="0 0 12 8" fill="none" aria-hidden="true"><path d="M1 1.5l5 5 5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+          </label>
+        </div>
+
+        <label class="slider-row slider-softness">
+          <div class="slider-header">
+            <span>柔和程度</span>
+            <span id="softnessValue">60</span>
+          </div>
+          <input id="softness" type="range" min="0" max="100" value="60" />
+        </label>
+
+        <div class="field-label field-label-top">取色模式</div>
+        <div class="theme-swatches">
+          <button class="swatch auto is-active" data-theme="auto" type="button" aria-label="自动取色" title="自动取色"></button>
+          <button class="swatch soft-rose" data-theme="soft-rose" type="button" aria-label="柔粉偏移" title="柔粉偏移"></button>
+          <button class="swatch mist-blue" data-theme="mist-blue" type="button" aria-label="雾蓝偏移" title="雾蓝偏移"></button>
+          <button class="swatch soft-apricot" data-theme="soft-apricot" type="button" aria-label="暖杏偏移" title="暖杏偏移"></button>
+          <button class="swatch soft-sand" data-theme="soft-sand" type="button" aria-label="砂灰偏移" title="砂灰偏移"></button>
+        </div>
+
+        <div class="chip-grid">
+          <div class="color-chip-card">
+            <div id="bgSwatch" class="color-chip"></div>
+            <div class="chip-copy">
+              <span>背景色</span>
+              <strong id="bgHexValue">#DCD6CE</strong>
+            </div>
+          </div>
+          <div class="color-chip-card">
+            <div id="textSwatch" class="color-chip"></div>
+            <div class="chip-copy">
+              <span>文字色</span>
+              <strong id="textHexValue">#6A5548</strong>
+            </div>
           </div>
         </div>
+      </section>
+
+      <div class="side-meta">
+        <div class="text-preview-card">
+          <div class="meta-dot" aria-hidden="true"></div>
+          <div class="text-preview-copy">
+            <span>当前文字预览</span>
+            <strong id="liveTextPreview">赤柱 / 12:42 PM</strong>
+          </div>
+        </div>
+
+        <div class="action-row">
+          <button class="btn btn-tonal" id="recolorBtn" type="button">重新取色</button>
+          <button class="btn btn-filled" id="exportBtn" type="button">导出PNG</button>
+        </div>
+
+        <div class="size-readout" id="exportSize">未加载图片</div>
       </div>
 
-    </section>
+      <input id="imageUpload" type="file" accept="image/*" hidden />
+      <button id="exportBtnSide" type="button" hidden aria-hidden="true" tabindex="-1"></button>
+    </aside>
 
-    <section class="panel preview-panel">
-      <div class="preview-toolbar">
-        <span>实时预览</span>
-        <span id="sizeInfo">未加载图片</span>
+    <section class="preview-panel">
+      <div class="preview-head">
+        <div class="preview-title-wrap">
+          <div class="meta-dot" aria-hidden="true"></div>
+          <span class="preview-title">实时预览</span>
+        </div>
+        <span class="preview-meta" id="previewMeta">未加载图片</span>
       </div>
-      <div class="preview-wrap">
+
+      <div class="preview-stage" id="dropZone">
         <canvas id="previewCanvas"></canvas>
+        <div class="placeholder" id="placeholder">
+          <div class="placeholder-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <rect x="3.5" y="5" width="17" height="14" rx="3" stroke="currentColor" stroke-width="1.7"/>
+              <circle cx="9" cy="10" r="2" stroke="currentColor" stroke-width="1.7"/>
+              <path d="M5.5 16l4.2-4 3.1 3 2.6-2.3 3.1 3.3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="placeholder-text">上传照片后即可预览</div>
+        </div>
       </div>
     </section>
   </main>
 
-  <script src="script.js"></script>
+  <script src="./script.js"></script>
 </body>
 </html>

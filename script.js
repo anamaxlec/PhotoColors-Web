@@ -1,127 +1,183 @@
-const fileInput = document.getElementById('fileInput');
-const locationInput = document.getElementById('locationInput');
-const timeInput = document.getElementById('timeInput');
-const showLocationInput = document.getElementById('showLocationInput');
-const showTimeInput = document.getElementById('showTimeInput');
-const fontFamilySelect = document.getElementById('fontFamilySelect');
-const locationScaleInput = document.getElementById('locationScaleInput');
-const timeScaleInput = document.getElementById('timeScaleInput');
-const lineGapInput = document.getElementById('lineGapInput');
-const locationScaleValue = document.getElementById('locationScaleValue');
-const timeScaleValue = document.getElementById('timeScaleValue');
-const lineGapValue = document.getElementById('lineGapValue');
-const toneSelect = document.getElementById('toneSelect');
-const outlineSelect = document.getElementById('outlineSelect');
-const liveTextPreview = document.getElementById('liveTextPreview');
-const autoColorBtn = document.getElementById('autoColorBtn');
-const downloadBtn = document.getElementById('downloadBtn');
-const previewCanvas = document.getElementById('previewCanvas');
-const previewCtx = previewCanvas.getContext('2d', { alpha: false });
-const bgSwatch = document.getElementById('bgSwatch');
-const textSwatch = document.getElementById('textSwatch');
-const bgHexValue = document.getElementById('bgHexValue');
-const textHexValue = document.getElementById('textHexValue');
-const sizeInfo = document.getElementById('sizeInfo');
 
-const FONT_PRESETS = {
-  'apple-cn': {
-    location: '620 1px -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif',
-    time: '560 1px -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif',
-    locationTracking: -0.014,
-    timeTracking: 0.008,
-    sample: 'Nyhavn, Copenhagen 6:42 PM 杭州',
+const refs = {
+  imageUpload: document.getElementById('imageUpload'),
+  exportBtn: document.getElementById('exportBtn'),
+  exportBtnSide: document.getElementById('exportBtnSide'),
+  locationInput: document.getElementById('locationInput'),
+  timeInput: document.getElementById('timeInput'),
+  showLocation: document.getElementById('showLocation'),
+  showTime: document.getElementById('showTime'),
+  fontFamily: document.getElementById('fontFamily'),
+  locationSize: document.getElementById('locationSize'),
+  timeSize: document.getElementById('timeSize'),
+  lineGap: document.getElementById('lineGap'),
+  textY: document.getElementById('textY'),
+  toneMode: document.getElementById('toneMode'),
+  edgeMode: document.getElementById('edgeMode'),
+  softness: document.getElementById('softness'),
+  locationSizeValue: document.getElementById('locationSizeValue'),
+  timeSizeValue: document.getElementById('timeSizeValue'),
+  gapValue: document.getElementById('gapValue'),
+  textYValue: document.getElementById('textYValue'),
+  softnessValue: document.getElementById('softnessValue'),
+  exportSize: document.getElementById('exportSize'),
+  previewMeta: document.getElementById('previewMeta'),
+  previewCanvas: document.getElementById('previewCanvas'),
+  placeholder: document.getElementById('placeholder'),
+  dropZone: document.getElementById('dropZone'),
+  themeToggle: document.getElementById('themeToggle'),
+};
+
+if (!refs.exportBtnSide) refs.exportBtnSide = refs.exportBtn;
+
+const previewCtx = refs.previewCanvas.getContext('2d', { alpha: false });
+const exportCanvas = document.createElement('canvas');
+const exportCtx = exportCanvas.getContext('2d', { alpha: false });
+
+const state = {
+  theme: 'auto',
+  image: null,
+  imageName: 'photocolors-output',
+  rawPalette: {
+    dominant: { r: 213, g: 219, b: 230 },
+    accent: { r: 108, g: 88, b: 72 },
   },
-  'pingfang-original': {
-    location: '640 1px "PingFang SC", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif',
-    time: '580 1px "PingFang SC", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif',
-    locationTracking: -0.016,
-    timeTracking: 0.008,
-    sample: 'Nyhavn, Copenhagen 6:42 PM 杭州',
+  palette: {
+    bg: { r: 213, g: 219, b: 230 },
+    text: { r: 96, g: 92, b: 83 },
   },
-  'pingfang-soft': {
-    location: '600 1px "PingFang SC", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif',
-    time: '540 1px "PingFang SC", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif',
-    locationTracking: -0.01,
-    timeTracking: 0.006,
-    sample: 'Nyhavn, Copenhagen 6:42 PM 杭州',
+};
+
+const THEMES = {
+  auto: {
+    label: '自动取色',
+    tint: null,
+    tintStrength: 0,
+    hueShift: 0,
+    satMul: 1,
+    lightAdd: 0,
+    accentHueShift: 0,
   },
-  'noto-cn': {
-    location: '640 1px "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
-    time: '570 1px "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
-    locationTracking: -0.01,
-    timeTracking: 0.008,
-    sample: 'Nyhavn, Copenhagen 6:42 PM 杭州',
+  'soft-rose': {
+    label: '柔粉偏移',
+    tint: '#e8d8dc',
+    tintStrength: 0.10,
+    hueShift: 0,
+    satMul: 0.96,
+    lightAdd: 0.01,
+    accentHueShift: -6,
+  },
+  'mist-blue': {
+    label: '雾蓝偏移',
+    tint: '#d6dde8',
+    tintStrength: 0.12,
+    hueShift: -6,
+    satMul: 0.92,
+    lightAdd: 0,
+    accentHueShift: 10,
+  },
+  'soft-apricot': {
+    label: '暖杏偏移',
+    tint: '#ecd9c5',
+    tintStrength: 0.12,
+    hueShift: 8,
+    satMul: 0.94,
+    lightAdd: 0.01,
+    accentHueShift: -10,
+  },
+  'soft-sand': {
+    label: '砂灰偏移',
+    tint: '#e0dbd3',
+    tintStrength: 0.10,
+    hueShift: 2,
+    satMul: 0.82,
+    lightAdd: 0.01,
+    accentHueShift: 4,
+  },
+};
+
+const FONT_STACKS = {
+  apple: {
+    location: `600 1px -apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif`,
+    time: `560 1px -apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif`,
+  },
+  noto: {
+    location: `600 1px "Noto Sans SC","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif`,
+    time: `560 1px "Noto Sans SC","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif`,
   },
   inter: {
-    location: '640 1px "Inter", "PingFang SC", "Noto Sans SC", sans-serif',
-    time: '570 1px "Inter", "PingFang SC", "Noto Sans SC", sans-serif',
-    locationTracking: -0.01,
-    timeTracking: 0.012,
-    sample: 'Nyhavn, Copenhagen 6:42 PM 杭州',
+    location: `600 1px Inter,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif`,
+    time: `560 1px Inter,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif`,
   },
   jakarta: {
-    location: '650 1px "Plus Jakarta Sans", "PingFang SC", "Noto Sans SC", sans-serif',
-    time: '580 1px "Plus Jakarta Sans", "PingFang SC", "Noto Sans SC", sans-serif',
-    locationTracking: -0.012,
-    timeTracking: 0.012,
-    sample: 'Nyhavn, Copenhagen 6:42 PM 杭州',
+    location: `600 1px "Plus Jakarta Sans","PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif`,
+    time: `560 1px "Plus Jakarta Sans","PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif`,
   },
   manrope: {
-    location: '640 1px "Manrope", "PingFang SC", "Noto Sans SC", sans-serif',
-    time: '560 1px "Manrope", "PingFang SC", "Noto Sans SC", sans-serif',
-    locationTracking: -0.01,
-    timeTracking: 0.01,
-    sample: 'Nyhavn, Copenhagen 6:42 PM 杭州',
+    location: `600 1px Manrope,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif`,
+    time: `560 1px Manrope,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif`,
   },
   outfit: {
-    location: '640 1px "Outfit", "PingFang SC", "Noto Sans SC", sans-serif',
-    time: '560 1px "Outfit", "PingFang SC", "Noto Sans SC", sans-serif',
-    locationTracking: -0.012,
-    timeTracking: 0.012,
-    sample: 'Nyhavn, Copenhagen 6:42 PM 杭州',
+    location: `600 1px Outfit,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif`,
+    time: `560 1px Outfit,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif`,
   },
   montserrat: {
-    location: '630 1px "Montserrat", "PingFang SC", "Noto Sans SC", sans-serif',
-    time: '560 1px "Montserrat", "PingFang SC", "Noto Sans SC", sans-serif',
-    locationTracking: -0.01,
-    timeTracking: 0.014,
-    sample: 'Nyhavn, Copenhagen 6:42 PM 杭州',
+    location: `600 1px Montserrat,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif`,
+    time: `560 1px Montserrat,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif`,
   },
   nunito: {
-    location: '650 1px "Nunito Sans", "PingFang SC", "Noto Sans SC", sans-serif',
-    time: '570 1px "Nunito Sans", "PingFang SC", "Noto Sans SC", sans-serif',
-    locationTracking: -0.008,
-    timeTracking: 0.012,
-    sample: 'Nyhavn, Copenhagen 6:42 PM 杭州',
+    location: `600 1px "Nunito Sans","PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif`,
+    time: `560 1px "Nunito Sans","PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif`,
   },
-  'ibm-plex': {
-    location: '650 1px "IBM Plex Sans", "PingFang SC", "Noto Sans SC", sans-serif',
-    time: '570 1px "IBM Plex Sans", "PingFang SC", "Noto Sans SC", sans-serif',
-    locationTracking: -0.008,
-    timeTracking: 0.012,
-    sample: 'Nyhavn, Copenhagen 6:42 PM 杭州',
+  ibm: {
+    location: `600 1px "IBM Plex Sans","PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif`,
+    time: `560 1px "IBM Plex Sans","PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif`,
+  },
+  'system-soft': {
+    location: `540 1px -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif`,
+    time: `500 1px -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif`,
+  },
+  'system-tight': {
+    location: `650 1px -apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif`,
+    time: `580 1px -apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif`,
   },
 };
 
-let currentImage = null;
-let currentFileName = 'photocolors-output';
-let drawRaf = 0;
-let currentPalette = {
-  background: { r: 220, g: 222, b: 226 },
-  text: { r: 143, g: 86, b: 57 },
-  bgHex: '#DCDEE2',
-  textHex: '#8F5639',
-};
+const UI_THEME_KEY = 'photocolors-ui-theme';
 
-const renderCanvas = document.createElement('canvas');
-const renderCtx = renderCanvas.getContext('2d', { alpha: false });
+function getInitialUiTheme() {
+  const saved = localStorage.getItem(UI_THEME_KEY);
+  if (saved === 'light' || saved === 'dark') return saved;
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function applyUiTheme(theme) {
+  document.documentElement.setAttribute('data-ui-theme', theme);
+  localStorage.setItem(UI_THEME_KEY, theme);
+}
+
+let themeAnimTimer = null;
+
+function animateThemeToggle() {
+  const root = document.documentElement;
+  const rect = refs.themeToggle?.getBoundingClientRect();
+  if (rect) {
+    root.style.setProperty('--theme-burst-x', `${rect.left + rect.width / 2}px`);
+    root.style.setProperty('--theme-burst-y', `${rect.top + rect.height / 2}px`);
+  }
+
+  root.classList.remove('theme-switching');
+  void root.offsetWidth;
+  root.classList.add('theme-switching');
+
+  clearTimeout(themeAnimTimer);
+  themeAnimTimer = window.setTimeout(() => {
+    root.classList.remove('theme-switching');
+  }, 520);
+}
 
 function clamp(v, min, max) {
   return Math.max(min, Math.min(max, v));
-}
-
-function rgbToHex(r, g, b) {
-  return '#' + [r, g, b].map(v => clamp(Math.round(v), 0, 255).toString(16).padStart(2, '0')).join('').toUpperCase();
 }
 
 function mix(a, b, t) {
@@ -132,10 +188,20 @@ function mix(a, b, t) {
   };
 }
 
+function hexToRgb(hex) {
+  const clean = hex.replace('#', '');
+  const int = parseInt(clean, 16);
+  return {
+    r: (int >> 16) & 255,
+    g: (int >> 8) & 255,
+    b: int & 255,
+  };
+}
+
 function luminance({ r, g, b }) {
-  const srgb = [r, g, b].map(v => {
-    const c = v / 255;
-    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  const srgb = [r, g, b].map((value) => {
+    const c = value / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
   });
   return srgb[0] * 0.2126 + srgb[1] * 0.7152 + srgb[2] * 0.0722;
 }
@@ -148,725 +214,501 @@ function contrastRatio(a, b) {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
-function hueDistance(a, b) {
-  const diff = Math.abs(a - b) % 360;
-  return diff > 180 ? 360 - diff : diff;
-}
-
-function hueInRange(h, start, end) {
-  const hue = ((h % 360) + 360) % 360;
-  if (start <= end) return hue >= start && hue <= end;
-  return hue >= start || hue <= end;
-}
-
-function bandCenter(band) {
-  if (band.start <= band.end) return (band.start + band.end) / 2;
-  return ((band.start + band.end + 360) / 2) % 360;
-}
-
-function getAccentProfile(bgHsl) {
-  if (bgHsl.s < 0.12) {
-    return {
-      bands: [
-        { start: 355, end: 28, weight: 42 },
-        { start: 18, end: 52, weight: 34 },
-        { start: 210, end: 255, weight: 16 },
-      ],
-      targetLight: 'dark',
-      targetSat: 0.56,
-      minRatio: 4.7,
-    };
-  }
-
-  if (hueInRange(bgHsl.h, 345, 32) || hueInRange(bgHsl.h, 32, 58)) {
-    return {
-      bands: [
-        { start: 40, end: 68, weight: 44 },
-        { start: 20, end: 40, weight: 30 },
-        { start: 72, end: 110, weight: 18 },
-      ],
-      targetLight: 'light',
-      targetSat: 0.64,
-      minRatio: 3.6,
-    };
-  }
-
-  if (hueInRange(bgHsl.h, 185, 270)) {
-    return {
-      bands: [
-        { start: 8, end: 36, weight: 40 },
-        { start: 345, end: 8, weight: 30 },
-        { start: 36, end: 62, weight: 18 },
-      ],
-      targetLight: 'dark',
-      targetSat: 0.6,
-      minRatio: 4.8,
-    };
-  }
-
-  if (hueInRange(bgHsl.h, 80, 170)) {
-    return {
-      bands: [
-        { start: 345, end: 16, weight: 38 },
-        { start: 16, end: 40, weight: 28 },
-        { start: 260, end: 305, weight: 14 },
-      ],
-      targetLight: 'dark',
-      targetSat: 0.6,
-      minRatio: 4.8,
-    };
-  }
-
-  return {
-    bands: [
-      { start: 345, end: 20, weight: 32 },
-      { start: 35, end: 64, weight: 24 },
-      { start: 220, end: 255, weight: 14 },
-    ],
-    targetLight: 'dark',
-    targetSat: 0.58,
-    minRatio: 4.7,
-  };
-}
-
 function rgbToHsl(r, g, b) {
   r /= 255;
   g /= 255;
   b /= 255;
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
-  let h = 0;
-  let s = 0;
   const l = (max + min) / 2;
 
-  if (max !== min) {
-    const d = max - min;
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-    switch (max) {
-      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-      case g: h = (b - r) / d + 2; break;
-      default: h = (r - g) / d + 4; break;
-    }
-    h /= 6;
-  }
+  if (max === min) return { h: 0, s: 0, l };
 
-  return { h: h * 360, s, l };
+  const d = max - min;
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+
+  let h = 0;
+  switch (max) {
+    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+    case g: h = (b - r) / d + 2; break;
+    default: h = (r - g) / d + 4; break;
+  }
+  return { h: h * 60, s, l };
 }
 
 function hslToRgb(h, s, l) {
-  h = ((h % 360) + 360) % 360;
-  h /= 360;
-  let r, g, b;
+  h = ((h % 360) + 360) % 360 / 360;
 
   if (s === 0) {
-    r = g = b = l;
-  } else {
-    const hue2rgb = (p, q, t) => {
-      if (t < 0) t += 1;
-      if (t > 1) t -= 1;
-      if (t < 1 / 6) return p + (q - p) * 6 * t;
-      if (t < 1 / 2) return q;
-      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
-      return p;
-    };
-
-    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-    const p = 2 * l - q;
-    r = hue2rgb(p, q, h + 1 / 3);
-    g = hue2rgb(p, q, h);
-    b = hue2rgb(p, q, h - 1 / 3);
+    const value = Math.round(l * 255);
+    return { r: value, g: value, b: value };
   }
 
+  const hue2rgb = (p, q, t) => {
+    if (t < 0) t += 1;
+    if (t > 1) t -= 1;
+    if (t < 1 / 6) return p + (q - p) * 6 * t;
+    if (t < 1 / 2) return q;
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+    return p;
+  };
+
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+  const p = 2 * l - q;
+
   return {
-    r: Math.round(r * 255),
-    g: Math.round(g * 255),
-    b: Math.round(b * 255),
+    r: Math.round(hue2rgb(p, q, h + 1 / 3) * 255),
+    g: Math.round(hue2rgb(p, q, h) * 255),
+    b: Math.round(hue2rgb(p, q, h - 1 / 3) * 255),
   };
 }
 
-function softenBackground(color) {
-  const hsl = rgbToHsl(color.r, color.g, color.b);
-  const targetS = Math.min(0.38, Math.max(0.08, hsl.s * 0.65));
-  const targetL = Math.min(0.82, Math.max(0.68, hsl.l * 0.92 + 0.18));
-  return hslToRgb(hsl.h, targetS, targetL);
+function getFontPreset() {
+  return FONT_STACKS[refs.fontFamily.value] || FONT_STACKS.apple;
 }
 
-function stylizePosterAccent(base, bg, profile) {
-  const bgHsl = rgbToHsl(bg.r, bg.g, bg.b);
-  const accentHsl = rgbToHsl(base.r, base.g, base.b);
-
-  let targetHue = accentHsl.h;
-  const bandMatch = profile.bands.find((band) => hueInRange(targetHue, band.start, band.end));
-  if (!bandMatch || accentHsl.s < 0.16 || hueDistance(targetHue, bgHsl.h) < 8) {
-    targetHue = bandCenter(profile.bands[0]);
-  }
-
-  let targetSat = clamp(Math.max(accentHsl.s, profile.targetSat), 0.42, 0.8);
-  let targetLight = profile.targetLight === 'light'
-    ? clamp(Math.max(accentHsl.l, 0.74), 0.68, 0.86)
-    : clamp(Math.min(accentHsl.l, 0.38), 0.18, 0.46);
-
-  let candidate = hslToRgb(targetHue, targetSat, targetLight);
-  if (contrastRatio(candidate, bg) >= profile.minRatio) return candidate;
-
-  for (let i = 1; i <= 18; i += 1) {
-    const t = i / 18;
-    const light = profile.targetLight === 'light'
-      ? clamp(targetLight + t * 0.18, 0, 0.94)
-      : clamp(targetLight - t * 0.18, 0.08, 1);
-    const sat = clamp(targetSat + t * 0.1, 0, 0.9);
-    candidate = hslToRgb(targetHue, sat, light);
-    if (contrastRatio(candidate, bg) >= profile.minRatio) return candidate;
-  }
-
-  const fallbackHue = bandCenter(profile.bands[0]);
-  return profile.targetLight === 'light'
-    ? hslToRgb(fallbackHue, clamp(profile.targetSat + 0.1, 0, 0.88), 0.9)
-    : hslToRgb(fallbackHue, clamp(profile.targetSat + 0.08, 0, 0.88), 0.24);
+function applyFontSize(template, sizePx) {
+  return template.replace('1px', `${sizePx.toFixed(2)}px`);
 }
 
-function pushContrast(color, bg, minRatio) {
-  if (contrastRatio(color, bg) >= minRatio) return color;
-
-  const hsl = rgbToHsl(color.r, color.g, color.b);
-  const preferLighter = luminance(color) >= luminance(bg);
-
-  for (let i = 1; i <= 18; i += 1) {
-    const delta = i * 0.025;
-    const candidate = hslToRgb(
-      hsl.h,
-      hsl.s,
-      preferLighter ? clamp(hsl.l + delta, 0, 0.97) : clamp(hsl.l - delta, 0.08, 1),
-    );
-    if (contrastRatio(candidate, bg) >= minRatio) return candidate;
-  }
-
-  return color;
-}
-
-function refineTypographyColor(accent, bg) {
-  const accentHsl = rgbToHsl(accent.r, accent.g, accent.b);
-  const bgHsl = rgbToHsl(bg.r, bg.g, bg.b);
-  const bgLum = luminance(bg);
-  const accentLum = luminance(accent);
-
-  const toned = hslToRgb(
-    accentHsl.h,
-    clamp(accentHsl.s * 0.84, 0.18, 0.62),
-    accentLum >= bgLum
-      ? clamp(accentHsl.l * 0.98 + 0.01, 0.54, 0.88)
-      : clamp(accentHsl.l * 0.92 + 0.02, 0.16, 0.44),
-  );
-
-  const blendAmount = bgHsl.s < 0.14 ? 0.14 : 0.17;
-  const mixed = mix(toned, bg, blendAmount);
-  const targetRatio = bgLum > 0.62 ? 3.25 : 3.0;
-  return pushContrast(mixed, bg, targetRatio);
-}
-
-function getToneAdjustedTextColor(base, bg, mode = 'elegant') {
-  const baseHsl = rgbToHsl(base.r, base.g, base.b);
-  const bgLum = luminance(bg);
-
-  if (mode === 'vivid') {
-    const vivid = hslToRgb(
-      baseHsl.h,
-      clamp(baseHsl.s * 1.08 + 0.03, 0.2, 0.72),
-      bgLum > 0.62 ? clamp(baseHsl.l * 0.9, 0.16, 0.42) : clamp(baseHsl.l * 1.04, 0.5, 0.84),
-    );
-    return pushContrast(vivid, bg, bgLum > 0.62 ? 3.35 : 3.1);
-  }
-
-  if (mode === 'balanced') {
-    return pushContrast(base, bg, bgLum > 0.62 ? 3.05 : 2.9);
-  }
-
-  if (mode === 'soft') {
-    const soft = hslToRgb(
-      baseHsl.h,
-      clamp(baseHsl.s * 0.66, 0.08, 0.42),
-      bgLum > 0.62 ? clamp(baseHsl.l * 0.98 + 0.05, 0.22, 0.48) : clamp(baseHsl.l * 1.04 + 0.04, 0.5, 0.84),
-    );
-    const softened = mix(soft, bg, 0.22);
-    return pushContrast(softened, bg, bgLum > 0.62 ? 2.15 : 2.05);
-  }
-
-  const elegant = hslToRgb(
-    baseHsl.h,
-    clamp(baseHsl.s * 0.78, 0.12, 0.52),
-    bgLum > 0.62 ? clamp(baseHsl.l * 0.96 + 0.02, 0.2, 0.46) : clamp(baseHsl.l * 1.02 + 0.02, 0.46, 0.82),
-  );
-  const softened = mix(elegant, bg, 0.14);
-  return pushContrast(softened, bg, bgLum > 0.62 ? 2.55 : 2.45);
-}
-
-function getOutlineStyle(textColor, bg, mode = 'soft') {
-  if (mode === 'none') {
-    return { enabled: false, mode: 'none', color: { r: 0, g: 0, b: 0 }, alpha: 0, widthFactor: 0, blurFactor: 0 };
-  }
-
-  if (mode === 'mist') {
-    const color = pushContrast(mix(textColor, bg, 0.72), bg, 1.08);
-    return {
-      enabled: true,
-      mode: 'mist',
-      color,
-      alpha: 0.14,
-      widthFactor: 0,
-      blurFactor: 0.22,
-    };
-  }
-
-  const adjusted = pushContrast(mix(textColor, bg, 0.62), bg, 1.14);
-  return {
-    enabled: true,
-    mode: 'stroke',
-    color: adjusted,
-    alpha: 0.12,
-    widthFactor: 0.032,
-    blurFactor: 0.08,
-  };
-}
-
-function extractPaletteCandidates(img) {
-  const temp = document.createElement('canvas');
-  const ctx = temp.getContext('2d', { willReadFrequently: true });
+function extractPalette(image) {
   const maxSide = 220;
-  const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
-  const w = Math.max(1, Math.round(img.naturalWidth * scale));
-  const h = Math.max(1, Math.round(img.naturalHeight * scale));
-  temp.width = w;
-  temp.height = h;
-  ctx.drawImage(img, 0, 0, w, h);
-  const { data } = ctx.getImageData(0, 0, w, h);
+  const scale = Math.min(maxSide / image.naturalWidth, maxSide / image.naturalHeight, 1);
+  const width = Math.max(32, Math.round(image.naturalWidth * scale));
+  const height = Math.max(32, Math.round(image.naturalHeight * scale));
 
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = width;
+  tempCanvas.height = height;
+  const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
+  tempCtx.drawImage(image, 0, 0, width, height);
+
+  const data = tempCtx.getImageData(0, 0, width, height).data;
   const bins = new Map();
-  for (let i = 0; i < data.length; i += 12) {
+
+  let weightedR = 0;
+  let weightedG = 0;
+  let weightedB = 0;
+  let totalWeight = 0;
+
+  for (let i = 0; i < data.length; i += 20) {
     const a = data[i + 3];
-    if (a < 200) continue;
+    if (a < 220) continue;
 
     const r = data[i];
     const g = data[i + 1];
     const b = data[i + 2];
-    const qr = Math.round(r / 16) * 16;
-    const qg = Math.round(g / 16) * 16;
-    const qb = Math.round(b / 16) * 16;
-    const key = `${qr},${qg},${qb}`;
+    const hsl = rgbToHsl(r, g, b);
 
-    const prev = bins.get(key) || { r: 0, g: 0, b: 0, count: 0 };
-    prev.r += r;
-    prev.g += g;
-    prev.b += b;
-    prev.count += 1;
-    bins.set(key, prev);
+    const satWeight = 0.55 + hsl.s * 1.15;
+    const lightPenalty = (hsl.l < 0.05 || hsl.l > 0.96) ? 0.15 : 1;
+    const weight = satWeight * lightPenalty;
+
+    weightedR += r * weight;
+    weightedG += g * weight;
+    weightedB += b * weight;
+    totalWeight += weight;
+
+    const key = `${Math.round(r / 24)}-${Math.round(g / 24)}-${Math.round(b / 24)}`;
+    const existing = bins.get(key) || { r: 0, g: 0, b: 0, count: 0, score: 0, sat: 0, light: 0 };
+    existing.r += r;
+    existing.g += g;
+    existing.b += b;
+    existing.count += 1;
+    existing.score += weight;
+    existing.sat += hsl.s;
+    existing.light += hsl.l;
+    bins.set(key, existing);
   }
 
-  return [...bins.values()].map((item) => {
-    const color = {
-      r: Math.round(item.r / item.count),
-      g: Math.round(item.g / item.count),
-      b: Math.round(item.b / item.count),
-    };
-    const hsl = rgbToHsl(color.r, color.g, color.b);
-    const luma = 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
-    return { color, count: item.count, hsl, luma };
-  }).sort((a, b) => b.count - a.count);
-}
+  const dominant = totalWeight > 0 ? {
+    r: Math.round(weightedR / totalWeight),
+    g: Math.round(weightedG / totalWeight),
+    b: Math.round(weightedB / totalWeight),
+  } : { r: 213, g: 219, b: 230 };
 
-function chooseBackgroundColor(candidates) {
-  if (!candidates.length) return { r: 220, g: 222, b: 226 };
+  const candidates = [...bins.values()]
+    .map((bin) => ({
+      r: Math.round(bin.r / bin.count),
+      g: Math.round(bin.g / bin.count),
+      b: Math.round(bin.b / bin.count),
+      sat: bin.sat / bin.count,
+      light: bin.light / bin.count,
+      score: bin.score / Math.max(1, bin.count),
+    }))
+    .sort((a, b) => (b.score + b.sat * 0.8) - (a.score + a.sat * 0.8));
 
-  let best = candidates[0];
-  let bestScore = -Infinity;
+  let accent = candidates.find((item) => item.sat > 0.22 && item.light > 0.12 && item.light < 0.84);
+  if (!accent) accent = candidates.find((item) => item.sat > 0.12);
+  if (!accent) accent = dominant;
 
-  for (const candidate of candidates) {
-    const { color, hsl, luma, count } = candidate;
-    if (luma < 18 || luma > 245) continue;
-
-    let score = count;
-    if (luma > 70 && luma < 220) score += 64;
-    if (hsl.s > 0.04 && hsl.s < 0.68) score += 30;
-    if (hsl.l > 0.18 && hsl.l < 0.75) score += 18;
-    if (hsl.s < 0.08) score += 12;
-
-    if (score > bestScore) {
-      bestScore = score;
-      best = candidate;
-    }
-  }
-
-  return softenBackground(best.color);
-}
-
-function chooseTextColor(candidates, bg) {
-  const bgHsl = rgbToHsl(bg.r, bg.g, bg.b);
-  const bgLum = luminance(bg);
-  const profile = getAccentProfile(bgHsl);
-  let best = null;
-  let bestScore = -Infinity;
-
-  for (const candidate of candidates) {
-    const { color, hsl, luma, count } = candidate;
-    if (count < 2) continue;
-
-    const ratio = contrastRatio(color, bg);
-    const hueGap = hueDistance(hsl.h, bgHsl.h);
-    let score = count * 0.18 + ratio * 18 + hsl.s * 95;
-
-    if (hueGap > 14) score += Math.min(hueGap, 90) * 0.26;
-    if (hueGap < 8) score -= 36;
-    if (hsl.s < 0.12) score -= 42;
-
-    for (const band of profile.bands) {
-      if (hueInRange(hsl.h, band.start, band.end)) score += band.weight;
-    }
-
-    if (profile.targetLight === 'dark') {
-      if (luma < 150) score += 28;
-      if (luma > 205) score -= 46;
-    } else {
-      if (luma > 150) score += 30;
-      if (luma < 95) score -= 20;
-    }
-
-    if (bgLum > 0.62 && hsl.l < 0.48) score += 14;
-    if (bgLum < 0.42 && hsl.l > 0.58) score += 14;
-
-    if (score > bestScore) {
-      bestScore = score;
-      best = color;
-    }
-  }
-
-  if (!best) {
-    const fallbackHue = bandCenter(profile.bands[0]);
-    best = profile.targetLight === 'light'
-      ? hslToRgb(fallbackHue, Math.max(profile.targetSat, 0.62), 0.8)
-      : hslToRgb(fallbackHue, Math.max(profile.targetSat, 0.56), 0.32);
-  }
-
-  return refineTypographyColor(stylizePosterAccent(best, bg, profile), bg);
-}
-
-function refreshPalette() {
-  if (!currentImage) return;
-  const candidates = extractPaletteCandidates(currentImage);
-  const background = chooseBackgroundColor(candidates);
-  const text = chooseTextColor(candidates, background);
-
-  currentPalette = {
-    background,
-    text,
-    bgHex: rgbToHex(background.r, background.g, background.b),
-    textHex: rgbToHex(text.r, text.g, text.b),
+  return {
+    dominant,
+    accent: { r: accent.r, g: accent.g, b: accent.b },
   };
-
-  scheduleDraw();
 }
 
-function computeLayout(img) {
-  const photoW = img.naturalWidth;
-  const photoH = img.naturalHeight;
-  const topH = photoH;
-  const canvasW = photoW;
-  const canvasH = photoH * 2;
-  return { photoW, photoH, topH, canvasW, canvasH };
+function softenBackground(color, softness = 60) {
+  const hsl = rgbToHsl(color.r, color.g, color.b);
+  const satFloor = 0.16;
+  const satTarget = clamp(Math.max(satFloor, hsl.s * (0.72 - softness / 240)), 0.14, 0.48);
+  const lightTarget = clamp(0.70 + softness / 520 + (0.50 - Math.abs(hsl.l - 0.50)) * 0.10, 0.66, 0.84);
+  return hslToRgb(hsl.h, satTarget, lightTarget);
 }
 
-function getFontPreset() {
-  return FONT_PRESETS[fontFamilySelect.value] || FONT_PRESETS['pingfang-original'];
+function applyThemeBias(baseBg, themeName, softness = 60) {
+  const theme = THEMES[themeName] || THEMES.auto;
+  if (!theme.tint) return baseBg;
+
+  const tint = hexToRgb(theme.tint);
+  const mixed = mix(baseBg, tint, theme.tintStrength + softness / 1800);
+  const hsl = rgbToHsl(mixed.r, mixed.g, mixed.b);
+  return hslToRgb(
+    hsl.h + theme.hueShift,
+    clamp(hsl.s * theme.satMul, 0.10, 0.44),
+    clamp(hsl.l + theme.lightAdd, 0.66, 0.86)
+  );
 }
 
-function applyFontTemplate(template, size) {
-  return template.replace('1px', `${Number(size).toFixed(2)}px`);
+function accentFromImage(rawAccent, bg, themeName) {
+  const theme = THEMES[themeName] || THEMES.auto;
+  const accentHsl = rgbToHsl(rawAccent.r, rawAccent.g, rawAccent.b);
+  const bgHsl = rgbToHsl(bg.r, bg.g, bg.b);
+
+  let hue = accentHsl.s > 0.10 ? accentHsl.h : bgHsl.h + 180;
+  hue += theme.accentHueShift;
+
+  const sat = clamp(Math.max(accentHsl.s * 1.02, 0.20), 0.20, 0.76);
+  const light = luminance(bg) > 0.62
+    ? clamp(Math.min(accentHsl.l * 0.72, 0.36), 0.16, 0.42)
+    : clamp(Math.max(accentHsl.l * 1.12, 0.62), 0.58, 0.84);
+
+  return hslToRgb(hue, sat, light);
 }
 
-function configureContextQuality(ctx) {
+function ensureContrast(color, bg, ratio) {
+  if (contrastRatio(color, bg) >= ratio) return color;
+
+  const colorHsl = rgbToHsl(color.r, color.g, color.b);
+  const darken = luminance(bg) > 0.5;
+
+  for (let i = 1; i <= 24; i += 1) {
+    const delta = i * 0.018;
+    const candidate = hslToRgb(
+      colorHsl.h,
+      colorHsl.s,
+      clamp(darken ? colorHsl.l - delta : colorHsl.l + delta, 0.08, 0.92),
+    );
+    if (contrastRatio(candidate, bg) >= ratio) return candidate;
+  }
+  return color;
+}
+
+function createTextColor(accent, bg, toneMode, softness) {
+  const bgLum = luminance(bg);
+  const hsl = rgbToHsl(accent.r, accent.g, accent.b);
+  let color;
+
+  if (toneMode === 'soft') {
+    color = hslToRgb(
+      hsl.h,
+      clamp(hsl.s * 0.56, 0.10, 0.34),
+      bgLum > 0.60 ? clamp(hsl.l * 0.94, 0.18, 0.42) : clamp(hsl.l * 1.04, 0.58, 0.84)
+    );
+    color = mix(color, bg, 0.28 + softness / 450);
+    return ensureContrast(color, bg, 2.0);
+  }
+
+  if (toneMode === 'balanced') {
+    color = hslToRgb(
+      hsl.h,
+      clamp(hsl.s * 0.82, 0.16, 0.48),
+      bgLum > 0.60 ? clamp(hsl.l * 0.88, 0.14, 0.40) : clamp(hsl.l * 1.02, 0.54, 0.84)
+    );
+    color = mix(color, bg, 0.14 + softness / 950);
+    return ensureContrast(color, bg, 2.7);
+  }
+
+  if (toneMode === 'vivid') {
+    color = hslToRgb(
+      hsl.h,
+      clamp(hsl.s * 1.06 + 0.04, 0.24, 0.76),
+      bgLum > 0.60 ? clamp(hsl.l * 0.82, 0.14, 0.36) : clamp(hsl.l * 1.08, 0.62, 0.90)
+    );
+    return ensureContrast(color, bg, 3.1);
+  }
+
+  color = hslToRgb(
+    hsl.h,
+    clamp(hsl.s * 0.68, 0.12, 0.42),
+    bgLum > 0.60 ? clamp(hsl.l * 0.90, 0.16, 0.38) : clamp(hsl.l * 1.02, 0.56, 0.82)
+  );
+  color = mix(color, bg, 0.18 + softness / 700);
+  return ensureContrast(color, bg, 2.35);
+}
+
+function getEdgeStyle(textColor, bg, edgeMode) {
+  if (edgeMode === 'none') {
+    return { shadowColor: 'transparent', shadowBlur: 0, shadowOffsetY: 0 };
+  }
+  if (edgeMode === 'mist') {
+    const soft = mix(textColor, bg, 0.72);
+    return {
+      shadowColor: `rgba(${soft.r}, ${soft.g}, ${soft.b}, 0.18)`,
+      shadowBlur: 14,
+      shadowOffsetY: 0,
+    };
+  }
+  const soft = mix(textColor, bg, 0.62);
+  return {
+    shadowColor: `rgba(${soft.r}, ${soft.g}, ${soft.b}, 0.18)`,
+    shadowBlur: 8,
+    shadowOffsetY: 1,
+  };
+}
+
+function updatePalette() {
+  if (!state.image) return;
+
+  const raw = extractPalette(state.image);
+  state.rawPalette = raw;
+
+  const softness = Number(refs.softness.value);
+  const autoBg = softenBackground(raw.dominant, softness);
+  const themedBg = applyThemeBias(autoBg, state.theme, softness);
+  const accent = accentFromImage(raw.accent, themedBg, state.theme);
+  const text = createTextColor(accent, themedBg, refs.toneMode.value, softness);
+
+  state.palette = { bg: themedBg, text, accent };
+}
+
+function syncControlReadouts() {
+  refs.locationSizeValue.textContent = `${Number(refs.locationSize.value).toFixed(2)}×`;
+  refs.timeSizeValue.textContent = `${Number(refs.timeSize.value).toFixed(2)}×`;
+  refs.gapValue.textContent = `${Number(refs.lineGap.value).toFixed(2)}×`;
+  refs.textYValue.textContent = `${refs.textY.value}%`;
+  refs.softnessValue.textContent = refs.softness.value;
+}
+
+function drawCenteredText(ctx, text, x, y, font, color, edge) {
+  ctx.save();
+  ctx.font = font;
+  ctx.fillStyle = `rgb(${color.r}, ${color.g}, ${color.b})`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.shadowColor = edge.shadowColor;
+  ctx.shadowBlur = edge.shadowBlur;
+  ctx.shadowOffsetY = edge.shadowOffsetY;
+  ctx.fillText(text, x, y);
+  ctx.restore();
+}
+
+function renderToCanvas(ctx, canvas, maxPreviewWidth = null) {
+  if (!state.image) {
+    canvas.width = 960;
+    canvas.height = 540;
+    ctx.fillStyle = '#eff3f8';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    return;
+  }
+
+  const photoW = state.image.naturalWidth;
+  const photoH = state.image.naturalHeight;
+  const exportW = photoW;
+  const exportH = photoH * 2;
+
+  let targetW = exportW;
+  let targetH = exportH;
+  let scale = 1;
+
+  if (maxPreviewWidth) {
+    scale = Math.min(maxPreviewWidth / exportW, 1);
+    targetW = Math.max(1, Math.round(exportW * scale));
+    targetH = Math.max(1, Math.round(exportH * scale));
+  }
+
+  canvas.width = targetW;
+  canvas.height = targetH;
+
+  ctx.clearRect(0, 0, targetW, targetH);
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
-}
 
-function splitTextUnits(text) {
-  return Array.from(text || '');
-}
+  const bg = state.palette.bg;
+  const text = state.palette.text;
+  const topH = Math.round(photoH * scale);
+  const bottomY = topH;
+  const drawW = Math.round(photoW * scale);
+  const drawH = Math.round(photoH * scale);
 
-function measureTrackedText(ctx, text, trackingPx = 0) {
-  const units = splitTextUnits(text);
-  if (!units.length) return 0;
-  let width = 0;
-  for (const unit of units) width += ctx.measureText(unit).width;
-  return width + Math.max(0, units.length - 1) * trackingPx;
-}
+  ctx.fillStyle = `rgb(${bg.r}, ${bg.g}, ${bg.b})`;
+  ctx.fillRect(0, 0, targetW, topH);
+  ctx.drawImage(state.image, 0, bottomY, drawW, drawH);
 
-function fillTrackedText(ctx, text, centerX, baselineY, trackingPx = 0) {
-  if (!text) return;
-  if (!trackingPx) {
-    ctx.fillText(text, centerX, baselineY);
-    return;
-  }
-  const units = splitTextUnits(text);
-  const totalWidth = measureTrackedText(ctx, text, trackingPx);
-  let x = centerX - totalWidth / 2;
-  const prevAlign = ctx.textAlign;
-  ctx.textAlign = 'left';
-  for (const unit of units) {
-    ctx.fillText(unit, x, baselineY);
-    x += ctx.measureText(unit).width + trackingPx;
-  }
-  ctx.textAlign = prevAlign;
-}
+  const fontPreset = getFontPreset();
+  const baseLocationSize = clamp(exportW * 0.052, 32, 160) * Number(refs.locationSize.value) * scale;
+  const baseTimeSize = clamp(baseLocationSize * 0.52, 16, 72) * Number(refs.timeSize.value);
+  const lineGap = Math.max(6 * scale, baseTimeSize * 0.36 * Number(refs.lineGap.value));
 
-function strokeTrackedText(ctx, text, centerX, baselineY, trackingPx = 0) {
-  if (!text) return;
-  if (!trackingPx) {
-    ctx.strokeText(text, centerX, baselineY);
-    return;
-  }
-  const units = splitTextUnits(text);
-  const totalWidth = measureTrackedText(ctx, text, trackingPx);
-  let x = centerX - totalWidth / 2;
-  const prevAlign = ctx.textAlign;
-  ctx.textAlign = 'left';
-  for (const unit of units) {
-    ctx.strokeText(unit, x, baselineY);
-    x += ctx.measureText(unit).width + trackingPx;
-  }
-  ctx.textAlign = prevAlign;
-}
+  const showLocation = refs.showLocation.checked && refs.locationInput.value.trim();
+  const showTime = refs.showTime.checked && refs.timeInput.value.trim();
 
-function drawTextLayer(targetCtx, canvasW, topH, textColor, parts, outlineStyle) {
-  const scale = 2;
-  const textCanvas = document.createElement('canvas');
-  textCanvas.width = Math.max(1, Math.round(canvasW * scale));
-  textCanvas.height = Math.max(1, Math.round(topH * scale));
-
-  const tctx = textCanvas.getContext('2d', { alpha: true });
-  configureContextQuality(tctx);
-  tctx.scale(scale, scale);
-  tctx.fillStyle = `rgb(${textColor.r}, ${textColor.g}, ${textColor.b})`;
-  tctx.textAlign = 'center';
-  tctx.textBaseline = 'alphabetic';
-  tctx.lineJoin = 'round';
-  tctx.lineCap = 'round';
-  tctx.miterLimit = 2;
-
-  const totalTextHeight =
-    parts.reduce((sum, part) => sum + part.height, 0) +
-    parts.slice(0, -1).reduce((sum, part) => sum + (part.gapAfter || 0), 0);
-
-  let currentTop = topH * 0.5 - totalTextHeight / 2;
-
-  for (const part of parts) {
-    tctx.font = part.font;
-    const baselineY = currentTop + part.height * 0.8;
-    const trackingPx = (part.trackingEm || 0) * part.height;
-
-    if (outlineStyle?.enabled) {
-      tctx.save();
-      tctx.shadowColor = `rgba(${outlineStyle.color.r}, ${outlineStyle.color.g}, ${outlineStyle.color.b}, ${outlineStyle.alpha})`;
-      tctx.shadowBlur = Math.max(0.5, part.height * (outlineStyle.blurFactor || 0));
-      tctx.shadowOffsetX = 0;
-      tctx.shadowOffsetY = 0;
-
-      if (outlineStyle.mode === 'stroke' && outlineStyle.widthFactor > 0) {
-        tctx.strokeStyle = `rgba(${outlineStyle.color.r}, ${outlineStyle.color.g}, ${outlineStyle.color.b}, ${outlineStyle.alpha})`;
-        tctx.lineWidth = Math.max(0.6, part.height * outlineStyle.widthFactor);
-        strokeTrackedText(tctx, part.text, canvasW / 2, baselineY, trackingPx);
-      }
-
-      fillTrackedText(tctx, part.text, canvasW / 2, baselineY, trackingPx);
-      tctx.restore();
-      fillTrackedText(tctx, part.text, canvasW / 2, baselineY, trackingPx);
-    } else {
-      fillTrackedText(tctx, part.text, canvasW / 2, baselineY, trackingPx);
-    }
-    currentTop += part.height + (part.gapAfter || 0);
-  }
-
-  configureContextQuality(targetCtx);
-  targetCtx.drawImage(textCanvas, 0, 0, canvasW, topH);
-}
-
-function addSubtleGrain(ctx, x, y, w, h, opacity = 0.02, strength = 6) {
-  if (w < 2 || h < 2 || opacity <= 0 || strength <= 0) return;
-
-  const img = ctx.getImageData(x, y, w, h);
-  const data = img.data;
-
-  for (let i = 0; i < data.length; i += 4) {
-    const noise = (Math.random() - 0.5) * strength * 255 * opacity;
-    data[i] = clamp(data[i] + noise, 0, 255);
-    data[i + 1] = clamp(data[i + 1] + noise, 0, 255);
-    data[i + 2] = clamp(data[i + 2] + noise, 0, 255);
-  }
-
-  ctx.putImageData(img, x, y);
-}
-
-async function ensureSelectedFontsReady() {
-  if (!document.fonts || !document.fonts.load) return;
-  const preset = getFontPreset();
-  const sampleText = preset.sample || 'Hangzhou 12:59 PM 杭州市';
-  const layoutWidth = currentImage ? currentImage.naturalWidth : previewCanvas.width;
-  const locationSize = Math.max(24, layoutWidth * 0.036) * Number(locationScaleInput.value || 1);
-  const timeSize = Math.max(14, layoutWidth * 0.018) * Number(timeScaleInput.value || 1);
-
-  const locationFont = applyFontTemplate(preset.location, locationSize);
-  const timeFont = applyFontTemplate(preset.time, timeSize);
-
-  try {
-    await Promise.all([
-      document.fonts.load(locationFont, sampleText),
-      document.fonts.load(timeFont, sampleText),
-      document.fonts.ready,
-    ]);
-  } catch (_) {
-    // ignore
-  }
-}
-
-function updateControlReadout() {
-  locationScaleValue.textContent = `${Number(locationScaleInput.value).toFixed(2)}×`;
-  timeScaleValue.textContent = `${Number(timeScaleInput.value).toFixed(2)}×`;
-  lineGapValue.textContent = `${Number(lineGapInput.value).toFixed(2)}×`;
-
-  const chunks = [];
-  if (showLocationInput.checked && locationInput.value.trim()) chunks.push(locationInput.value.trim());
-  if (showTimeInput.checked && timeInput.value.trim()) chunks.push(timeInput.value.trim());
-  liveTextPreview.textContent = chunks.length ? chunks.join(' / ') : '当前没有显示任何文字';
-}
-
-function scheduleDraw() {
-  updateControlReadout();
-  if (drawRaf) cancelAnimationFrame(drawRaf);
-  drawRaf = requestAnimationFrame(() => {
-    drawRaf = 0;
-    void drawComposition();
-  });
-}
-
-async function drawComposition() {
-  if (!currentImage) return;
-
-  const { photoW, photoH, topH, canvasW, canvasH } = computeLayout(currentImage);
-  renderCanvas.width = canvasW;
-  renderCanvas.height = canvasH;
-  await ensureSelectedFontsReady();
-
-  const bg = currentPalette.background;
-  const text = getToneAdjustedTextColor(currentPalette.text, currentPalette.background, toneSelect.value);
-  const outlineStyle = getOutlineStyle(text, bg, outlineSelect.value);
-
-  configureContextQuality(renderCtx);
-  renderCtx.save();
-  renderCtx.clearRect(0, 0, canvasW, canvasH);
-  renderCtx.fillStyle = `rgb(${bg.r}, ${bg.g}, ${bg.b})`;
-  renderCtx.fillRect(0, 0, canvasW, topH);
-  renderCtx.drawImage(currentImage, 0, topH, photoW, photoH);
-  addSubtleGrain(renderCtx, 0, topH, photoW, photoH, 0.018, 5.5);
-
-  const location = (locationInput.value || '').trim();
-  const time = (timeInput.value || '').trim();
-  const showLocation = showLocationInput.checked && Boolean(location);
-  const showTime = showTimeInput.checked && Boolean(time);
-
-  const preset = getFontPreset();
-  const baseLocationSize = Math.max(30, canvasW * 0.036);
-  const baseTimeSize = Math.max(16, canvasW * 0.018);
-  const locationFontSize = baseLocationSize * Number(locationScaleInput.value || 1);
-  const timeFontSize = baseTimeSize * Number(timeScaleInput.value || 1);
-  const lineGap = Math.max(0, canvasW * 0.012 * Number(lineGapInput.value || 1));
-
-  const textBlockParts = [];
+  const blocks = [];
   if (showLocation) {
-    textBlockParts.push({
-      text: location,
-      font: applyFontTemplate(preset.location, locationFontSize),
-      height: locationFontSize,
-      gapAfter: showTime ? lineGap : 0,
-      trackingEm: preset.locationTracking || 0,
+    blocks.push({
+      text: refs.locationInput.value.trim(),
+      font: applyFontSize(fontPreset.location, baseLocationSize),
+      size: baseLocationSize,
     });
   }
   if (showTime) {
-    textBlockParts.push({
-      text: time,
-      font: applyFontTemplate(preset.time, timeFontSize),
-      height: timeFontSize,
-      gapAfter: 0,
-      trackingEm: preset.timeTracking || 0,
+    blocks.push({
+      text: refs.timeInput.value.trim(),
+      font: applyFontSize(fontPreset.time, baseTimeSize),
+      size: baseTimeSize,
     });
   }
 
-  if (textBlockParts.length) {
-    drawTextLayer(renderCtx, canvasW, topH, text, textBlockParts, outlineStyle);
+  if (blocks.length > 0) {
+    const totalHeight = blocks.reduce((sum, item) => sum + item.size, 0) + (blocks.length - 1) * lineGap;
+    const centerY = topH * (Number(refs.textY.value) / 100);
+    let currentY = centerY - totalHeight / 2;
+    const edge = getEdgeStyle(text, bg, refs.edgeMode.value);
+
+    for (const item of blocks) {
+      currentY += item.size * 0.82;
+      drawCenteredText(ctx, item.text, targetW / 2, currentY, item.font, text, edge);
+      currentY += item.size * 0.18 + lineGap;
+    }
   }
 
-  renderCtx.restore();
-
-  previewCanvas.width = canvasW;
-  previewCanvas.height = canvasH;
-  configureContextQuality(previewCtx);
-  previewCtx.clearRect(0, 0, canvasW, canvasH);
-  previewCtx.drawImage(renderCanvas, 0, 0);
-
-  bgSwatch.style.background = `rgb(${bg.r}, ${bg.g}, ${bg.b})`;
-  textSwatch.style.background = `rgb(${text.r}, ${text.g}, ${text.b})`;
-  bgHexValue.textContent = currentPalette.bgHex;
-  textHexValue.textContent = currentPalette.textHex;
-  sizeInfo.textContent = `${canvasW} × ${canvasH}导出｜原图${photoW} × ${photoH}`;
+  if (!maxPreviewWidth) {
+    if (refs.exportSize) refs.exportSize.textContent = `${exportW} × ${exportH}`;
+    if (refs.previewMeta) refs.previewMeta.textContent = `${exportW} × ${exportH}导出｜原图${photoW} × ${photoH}｜${THEMES[state.theme].label}`;
+  }
 }
 
-function loadImage(file) {
-  const reader = new FileReader();
-  reader.onload = () => {
-    const img = new Image();
-    img.onload = () => {
-      currentImage = img;
-      currentFileName = (file.name || 'photocolors-output').replace(/\.[^.]+$/, '');
-      refreshPalette();
-      downloadBtn.disabled = false;
-    };
-    img.src = reader.result;
-  };
-  reader.readAsDataURL(file);
+function renderAll() {
+  syncControlReadouts();
+  if (!state.image) return;
+
+  updatePalette();
+  renderToCanvas(exportCtx, exportCanvas, null);
+  renderToCanvas(previewCtx, refs.previewCanvas, 1080);
+
+  refs.placeholder?.classList.add('is-hidden');
+  if (refs.exportBtn) refs.exportBtn.disabled = false;
+  if (refs.exportBtnSide) refs.exportBtnSide.disabled = false;
 }
 
-function bindLiveRedraw(el, eventName = 'input') {
-  el.addEventListener(eventName, scheduleDraw);
-}
-
-fileInput.addEventListener('change', (e) => {
-  const file = e.target.files?.[0];
+function loadImageFromFile(file) {
   if (!file) return;
-  loadImage(file);
-});
+  const url = URL.createObjectURL(file);
+  const image = new Image();
+  image.onload = () => {
+    state.image = image;
+    state.imageName = file.name.replace(/\.[^/.]+$/, '') || 'photocolors-output';
+    renderAll();
+    URL.revokeObjectURL(url);
+  };
+  image.src = url;
+}
 
-bindLiveRedraw(locationInput);
-bindLiveRedraw(timeInput);
-bindLiveRedraw(showLocationInput, 'change');
-bindLiveRedraw(showTimeInput, 'change');
-bindLiveRedraw(fontFamilySelect, 'change');
-bindLiveRedraw(locationScaleInput);
-bindLiveRedraw(timeScaleInput);
-bindLiveRedraw(lineGapInput);
-bindLiveRedraw(toneSelect, 'change');
-bindLiveRedraw(outlineSelect, 'change');
-autoColorBtn.addEventListener('click', refreshPalette);
+function handleExport() {
+  if (!state.image) return;
 
-updateControlReadout();
-
-downloadBtn.addEventListener('click', async () => {
-  if (!currentImage) return;
-  await drawComposition();
-  renderCanvas.toBlob((blob) => {
+  exportCanvas.toBlob((blob) => {
     if (!blob) return;
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${currentFileName}-photocolors.png`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `${state.imageName}-photocolors.png`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
     URL.revokeObjectURL(url);
   }, 'image/png');
+}
+
+function activateTheme(themeName) {
+  state.theme = themeName;
+  document.querySelectorAll('.swatch').forEach((btn) => {
+    btn.classList.toggle('is-active', btn.dataset.theme === themeName);
+  });
+  document.querySelectorAll('.preset-card').forEach((card) => {
+    card.classList.toggle('is-active', card.dataset.theme === themeName);
+  });
+  if (state.image) renderAll();
+}
+
+refs.imageUpload.addEventListener('change', (event) => {
+  loadImageFromFile(event.target.files?.[0]);
 });
+
+[
+  refs.locationInput,
+  refs.timeInput,
+  refs.showLocation,
+  refs.showTime,
+  refs.fontFamily,
+  refs.locationSize,
+  refs.timeSize,
+  refs.lineGap,
+  refs.textY,
+  refs.toneMode,
+  refs.edgeMode,
+  refs.softness,
+].forEach((el) => {
+  el.addEventListener('input', renderAll);
+  el.addEventListener('change', renderAll);
+});
+
+refs.exportBtn?.addEventListener('click', handleExport);
+if (refs.exportBtnSide && refs.exportBtnSide !== refs.exportBtn) {
+  refs.exportBtnSide.addEventListener('click', handleExport);
+}
+
+const recolorBtn = document.getElementById('recolorBtn');
+recolorBtn?.addEventListener('click', () => {
+  if (!state.image) return;
+  updatePalette();
+  renderAll();
+});
+
+document.querySelectorAll('.swatch').forEach((btn) => {
+  btn.addEventListener('click', () => activateTheme(btn.dataset.theme));
+});
+
+document.querySelectorAll('.preset-card').forEach((card) => {
+  card.addEventListener('click', () => activateTheme(card.dataset.theme));
+});
+
+refs.dropZone?.addEventListener('dragover', (event) => {
+  event.preventDefault();
+  refs.dropZone.style.boxShadow = 'inset 0 0 0 2px rgba(26, 115, 232, 0.22)';
+});
+
+refs.dropZone?.addEventListener('dragleave', () => {
+  refs.dropZone.style.boxShadow = '';
+});
+
+refs.dropZone?.addEventListener('drop', (event) => {
+  event.preventDefault();
+  refs.dropZone.style.boxShadow = '';
+  const file = event.dataTransfer.files?.[0];
+  if (file && file.type.startsWith('image/')) {
+    loadImageFromFile(file);
+  }
+});
+
+applyUiTheme(getInitialUiTheme());
+
+refs.themeToggle?.addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-ui-theme') === 'dark' ? 'dark' : 'light';
+  animateThemeToggle();
+  applyUiTheme(current === 'dark' ? 'light' : 'dark');
+});
+
+syncControlReadouts();
+if (refs.exportBtn) refs.exportBtn.disabled = true;
+if (refs.exportBtnSide) refs.exportBtnSide.disabled = true;
