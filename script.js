@@ -23,43 +23,43 @@ const sizeInfo = document.getElementById('sizeInfo');
 
 const FONT_PRESETS = {
   'apple-cn': {
-    location: '800 1px -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif',
-    time: '700 1px -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif',
+    location: '700 1px -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif',
+    time: '600 1px -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif',
     sample: '杭州市 12:59 PM',
   },
   'noto-cn': {
-    location: '800 1px "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
-    time: '700 1px "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
+    location: '700 1px "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
+    time: '600 1px "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
     sample: '杭州市 12:59 PM',
   },
   'inter': {
-    location: '800 1px "Inter", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
-    time: '700 1px "Inter", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
+    location: '700 1px "Inter", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
+    time: '600 1px "Inter", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
     sample: 'Nyhavn 12:59 PM 杭州市',
   },
   'jakarta': {
-    location: '800 1px "Plus Jakarta Sans", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
-    time: '700 1px "Plus Jakarta Sans", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
+    location: '700 1px "Plus Jakarta Sans", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
+    time: '600 1px "Plus Jakarta Sans", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
     sample: 'Nyhavn 12:59 PM 杭州市',
   },
   'manrope': {
-    location: '800 1px "Manrope", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
-    time: '700 1px "Manrope", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
+    location: '700 1px "Manrope", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
+    time: '600 1px "Manrope", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
     sample: 'Nyhavn 12:59 PM 杭州市',
   },
   'outfit': {
-    location: '800 1px "Outfit", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
-    time: '700 1px "Outfit", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
+    location: '700 1px "Outfit", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
+    time: '600 1px "Outfit", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
     sample: 'Nyhavn 12:59 PM 杭州市',
   },
   'montserrat': {
-    location: '800 1px "Montserrat", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
-    time: '700 1px "Montserrat", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
+    location: '700 1px "Montserrat", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
+    time: '600 1px "Montserrat", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
     sample: 'Nyhavn 12:59 PM 杭州市',
   },
   'nunito': {
-    location: '800 1px "Nunito Sans", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
-    time: '700 1px "Nunito Sans", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
+    location: '700 1px "Nunito Sans", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
+    time: '600 1px "Nunito Sans", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
     sample: 'Nyhavn 12:59 PM 杭州市',
   },
   'ibm-plex': {
@@ -78,6 +78,9 @@ let currentPalette = {
   bgHex: '#DCDEE2',
   textHex: '#8F5639',
 };
+
+const renderCanvas = document.createElement('canvas');
+const renderCtx = renderCanvas.getContext('2d', { alpha: false });
 
 function clamp(v, min, max) {
   return Math.max(min, Math.min(max, v));
@@ -438,15 +441,67 @@ function getFontPreset() {
 }
 
 function applyFontTemplate(template, size) {
-  return template.replace('1px', `${Math.round(size)}px`);
+  return template.replace('1px', `${Number(size).toFixed(2)}px`);
+}
+
+function configureContextQuality(ctx) {
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+}
+
+function drawTextLayer(targetCtx, canvasW, topH, textColor, parts) {
+  const scale = 2;
+  const textCanvas = document.createElement('canvas');
+  textCanvas.width = Math.max(1, Math.round(canvasW * scale));
+  textCanvas.height = Math.max(1, Math.round(topH * scale));
+
+  const tctx = textCanvas.getContext('2d', { alpha: true });
+  configureContextQuality(tctx);
+  tctx.scale(scale, scale);
+  tctx.fillStyle = `rgb(${textColor.r}, ${textColor.g}, ${textColor.b})`;
+  tctx.textAlign = 'center';
+  tctx.textBaseline = 'alphabetic';
+
+  const totalTextHeight =
+    parts.reduce((sum, part) => sum + part.height, 0) +
+    parts.slice(0, -1).reduce((sum, part) => sum + (part.gapAfter || 0), 0);
+
+  let currentTop = topH * 0.5 - totalTextHeight / 2;
+
+  for (const part of parts) {
+    tctx.font = part.font;
+    const baselineY = currentTop + part.height * 0.8;
+    tctx.fillText(part.text, canvasW / 2, baselineY);
+    currentTop += part.height + (part.gapAfter || 0);
+  }
+
+  configureContextQuality(targetCtx);
+  targetCtx.drawImage(textCanvas, 0, 0, canvasW, topH);
+}
+
+function addSubtleGrain(ctx, x, y, w, h, opacity = 0.02, strength = 6) {
+  if (w < 2 || h < 2 || opacity <= 0 || strength <= 0) return;
+
+  const img = ctx.getImageData(x, y, w, h);
+  const data = img.data;
+
+  for (let i = 0; i < data.length; i += 4) {
+    const noise = (Math.random() - 0.5) * strength * 255 * opacity;
+    data[i] = clamp(data[i] + noise, 0, 255);
+    data[i + 1] = clamp(data[i + 1] + noise, 0, 255);
+    data[i + 2] = clamp(data[i + 2] + noise, 0, 255);
+  }
+
+  ctx.putImageData(img, x, y);
 }
 
 async function ensureSelectedFontsReady() {
   if (!document.fonts || !document.fonts.load) return;
   const preset = getFontPreset();
   const sampleText = preset.sample || 'Hangzhou 12:59 PM 杭州市';
-  const locationSize = Math.round(Math.max(24, previewCanvas.width * 0.036) * Number(locationScaleInput.value || 1));
-  const timeSize = Math.round(Math.max(14, previewCanvas.width * 0.018) * Number(timeScaleInput.value || 1));
+  const layoutWidth = currentImage ? currentImage.naturalWidth : previewCanvas.width;
+  const locationSize = Math.max(24, layoutWidth * 0.036) * Number(locationScaleInput.value || 1);
+  const timeSize = Math.max(14, layoutWidth * 0.018) * Number(timeScaleInput.value || 1);
 
   const locationFont = applyFontTemplate(preset.location, locationSize);
   const timeFont = applyFontTemplate(preset.time, timeSize);
@@ -486,18 +541,20 @@ async function drawComposition() {
   if (!currentImage) return;
 
   const { photoW, photoH, topH, canvasW, canvasH } = computeLayout(currentImage);
-  previewCanvas.width = canvasW;
-  previewCanvas.height = canvasH;
+  renderCanvas.width = canvasW;
+  renderCanvas.height = canvasH;
   await ensureSelectedFontsReady();
 
   const bg = currentPalette.background;
   const text = currentPalette.text;
 
-  previewCtx.save();
-  previewCtx.clearRect(0, 0, canvasW, canvasH);
-  previewCtx.fillStyle = `rgb(${bg.r}, ${bg.g}, ${bg.b})`;
-  previewCtx.fillRect(0, 0, canvasW, topH);
-  previewCtx.drawImage(currentImage, 0, topH, photoW, photoH);
+  configureContextQuality(renderCtx);
+  renderCtx.save();
+  renderCtx.clearRect(0, 0, canvasW, canvasH);
+  renderCtx.fillStyle = `rgb(${bg.r}, ${bg.g}, ${bg.b})`;
+  renderCtx.fillRect(0, 0, canvasW, topH);
+  renderCtx.drawImage(currentImage, 0, topH, photoW, photoH);
+  addSubtleGrain(renderCtx, 0, topH, photoW, photoH, 0.018, 5.5);
 
   const location = (locationInput.value || '').trim();
   const time = (timeInput.value || '').trim();
@@ -505,58 +562,47 @@ async function drawComposition() {
   const showTime = showTimeInput.checked && Boolean(time);
 
   const preset = getFontPreset();
-  const baseLocationSize = Math.max(30, Math.round(canvasW * 0.036));
-  const baseTimeSize = Math.max(16, Math.round(canvasW * 0.018));
+  const baseLocationSize = Math.max(30, canvasW * 0.036);
+  const baseTimeSize = Math.max(16, canvasW * 0.018);
   const locationFontSize = baseLocationSize * Number(locationScaleInput.value || 1);
   const timeFontSize = baseTimeSize * Number(timeScaleInput.value || 1);
-  const lineGap = Math.max(0, Math.round(canvasW * 0.012 * Number(lineGapInput.value || 1)));
+  const lineGap = Math.max(0, canvasW * 0.012 * Number(lineGapInput.value || 1));
 
-  previewCtx.fillStyle = `rgb(${text.r}, ${text.g}, ${text.b})`;
-  previewCtx.textAlign = 'center';
-  previewCtx.textBaseline = 'alphabetic';
-
-  const centerX = canvasW / 2;
   const textBlockParts = [];
   if (showLocation) {
     textBlockParts.push({
-      kind: 'location',
       text: location,
-      size: locationFontSize,
       font: applyFontTemplate(preset.location, locationFontSize),
       height: locationFontSize,
+      gapAfter: showTime ? lineGap : 0,
     });
   }
   if (showTime) {
     textBlockParts.push({
-      kind: 'time',
       text: time,
-      size: timeFontSize,
       font: applyFontTemplate(preset.time, timeFontSize),
       height: timeFontSize,
+      gapAfter: 0,
     });
   }
 
   if (textBlockParts.length) {
-    const totalTextHeight = textBlockParts.reduce((sum, part) => sum + part.height, 0) + lineGap * (textBlockParts.length - 1);
-    let currentTop = topH * 0.5 - totalTextHeight / 2;
-
-    for (let i = 0; i < textBlockParts.length; i += 1) {
-      const part = textBlockParts[i];
-      previewCtx.font = part.font;
-      const baselineY = currentTop + part.height * 0.8;
-      previewCtx.fillText(part.text, centerX, baselineY);
-      currentTop += part.height;
-      if (i < textBlockParts.length - 1) currentTop += lineGap;
-    }
+    drawTextLayer(renderCtx, canvasW, topH, text, textBlockParts);
   }
 
-  previewCtx.restore();
+  renderCtx.restore();
+
+  previewCanvas.width = canvasW;
+  previewCanvas.height = canvasH;
+  configureContextQuality(previewCtx);
+  previewCtx.clearRect(0, 0, canvasW, canvasH);
+  previewCtx.drawImage(renderCanvas, 0, 0);
 
   bgSwatch.style.background = `rgb(${bg.r}, ${bg.g}, ${bg.b})`;
   textSwatch.style.background = `rgb(${text.r}, ${text.g}, ${text.b})`;
   bgHexValue.textContent = currentPalette.bgHex;
   textHexValue.textContent = currentPalette.textHex;
-  sizeInfo.textContent = `${canvasW} × ${canvasH}导出｜上下1:1｜原图${photoW} × ${photoH}`;
+  sizeInfo.textContent = `${canvasW} × ${canvasH}导出｜原图${photoW} × ${photoH}`;
 }
 
 function loadImage(file) {
@@ -599,7 +645,7 @@ updateControlReadout();
 downloadBtn.addEventListener('click', async () => {
   if (!currentImage) return;
   await drawComposition();
-  previewCanvas.toBlob((blob) => {
+  renderCanvas.toBlob((blob) => {
     if (!blob) return;
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

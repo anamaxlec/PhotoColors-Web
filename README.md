@@ -1,4 +1,4 @@
-# PhotoColors-Web
+# PhotoColors静态版v8
 
 这是一个可直接部署到GitHub Pages的纯前端项目。
 
