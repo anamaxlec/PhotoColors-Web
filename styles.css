@@ -1,0 +1,262 @@
+:root {
+  --bg: #eef1f4;
+  --panel: #ffffff;
+  --border: rgba(18, 24, 40, 0.08);
+  --text: #152033;
+  --muted: #61708a;
+  --shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: linear-gradient(180deg, #f5f7fa 0%, #eef2f7 100%);
+  color: var(--text);
+}
+
+.app {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 380px minmax(0, 1fr);
+  gap: 20px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  box-shadow: var(--shadow);
+}
+
+.controls {
+  padding: 22px;
+  align-self: start;
+  position: sticky;
+  top: 20px;
+}
+
+.controls h1 {
+  margin: 0 0 8px;
+  font-size: 28px;
+  line-height: 1.15;
+}
+
+.desc, .note {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.group-title {
+  margin: 18px 0 10px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #516178;
+  text-transform: uppercase;
+}
+
+.field {
+  display: block;
+  margin-bottom: 14px;
+}
+
+.field span {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.field span strong {
+  font-size: 13px;
+  color: #516178;
+}
+
+.field input[type="text"],
+.field input[type="file"],
+.field select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid rgba(18, 24, 40, 0.12);
+  border-radius: 14px;
+  background: #fff;
+  font-size: 15px;
+}
+
+.field input[type="range"] {
+  width: 100%;
+}
+
+.toggles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.toggle-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid rgba(18, 24, 40, 0.08);
+  border-radius: 14px;
+  background: #f8fafc;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+button {
+  appearance: none;
+  border: none;
+  border-radius: 999px;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  background: #142033;
+  color: #fff;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+button + button {
+  background: #2b67f6;
+}
+
+.live-readout {
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border: 1px solid rgba(18, 24, 40, 0.08);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #f9fbff 0%, #f4f7fb 100%);
+}
+
+.live-readout div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.live-readout span {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #61708a;
+}
+
+.live-readout strong {
+  font-size: 15px;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.color-grid {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.color-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid rgba(18, 24, 40, 0.08);
+  border-radius: 18px;
+  background: #f7f9fc;
+}
+
+.swatch {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  border: 1px solid rgba(0,0,0,0.06);
+  background: #ccc;
+  flex: 0 0 auto;
+}
+
+.color-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.preview-panel {
+  padding: 18px;
+  min-height: calc(100vh - 48px);
+}
+
+.preview-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.preview-wrap {
+  min-height: calc(100vh - 120px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  background: linear-gradient(180deg, #f8fafc 0%, #edf2f7 100%);
+  border: 1px dashed rgba(18, 24, 40, 0.12);
+  border-radius: 22px;
+  padding: 18px;
+}
+
+#previewCanvas {
+  max-width: 100%;
+  max-height: calc(100vh - 180px);
+  width: auto;
+  height: auto;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.18);
+  border-radius: 0;
+  background: #fff;
+}
+
+@media (max-width: 980px) {
+  .app {
+    grid-template-columns: 1fr;
+  }
+
+  .controls {
+    position: static;
+  }
+
+  .preview-panel {
+    min-height: auto;
+  }
+
+  .preview-wrap {
+    min-height: 60vh;
+  }
+}
+
+@media (max-width: 520px) {
+  .toggles {
+    grid-template-columns: 1fr;
+  }
+}

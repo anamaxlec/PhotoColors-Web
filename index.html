@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PhotoColors静态版v8</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=Manrope:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Nunito+Sans:wght@600;700;800&family=Montserrat:wght@600;700;800&family=IBM+Plex+Sans:wght@500;600;700&family=Noto+Sans+SC:wght@500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app">
+    <section class="panel controls">
+      <h1>PhotoColors静态版v8</h1>
+      <p class="desc">固定上下1:1。上半部分为取色背景与地点/时间，下半部分为原图。当前版本继续重构字体取色，优先生成更跳脱、更高对比、更有后现代感的文字色。</p>
+
+      <label class="field upload-field">
+        <span>上传照片</span>
+        <input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp,image/heic,image/heif" />
+      </label>
+
+      <div class="group-title">文字内容</div>
+      <label class="field">
+        <span>地点</span>
+        <input id="locationInput" type="text" placeholder="例如：Nyhavn, Copenhagen" value="Nyhavn, Copenhagen" />
+      </label>
+
+      <label class="field">
+        <span>时间</span>
+        <input id="timeInput" type="text" placeholder="例如：6:42 PM" value="6:42 PM" />
+      </label>
+
+      <div class="toggles">
+        <label class="toggle-item"><input id="showLocationInput" type="checkbox" checked />显示地点</label>
+        <label class="toggle-item"><input id="showTimeInput" type="checkbox" checked />显示时间</label>
+      </div>
+
+      <div class="group-title">字体与排版</div>
+      <label class="field">
+        <span>字体选择</span>
+        <select id="fontFamilySelect">
+          <option value="apple-cn" selected>Apple风格无衬线</option>
+          <option value="noto-cn">Noto Sans SC</option>
+          <option value="inter">Inter + 中文无衬线</option>
+          <option value="jakarta">Plus Jakarta Sans + 中文无衬线</option>
+          <option value="manrope">Manrope + 中文无衬线</option>
+          <option value="outfit">Outfit + 中文无衬线</option>
+          <option value="montserrat">Montserrat + 中文无衬线</option>
+          <option value="nunito">Nunito Sans + 中文无衬线</option>
+          <option value="ibm-plex">IBM Plex Sans + 中文无衬线</option>
+        </select>
+      </label>
+
+      <label class="field slider-field">
+        <span>地点字号 <strong id="locationScaleValue">1.00×</strong></span>
+        <input id="locationScaleInput" type="range" min="0.6" max="1.8" step="0.01" value="1.00" />
+      </label>
+
+      <label class="field slider-field">
+        <span>时间字号 <strong id="timeScaleValue">1.00×</strong></span>
+        <input id="timeScaleInput" type="range" min="0.5" max="1.8" step="0.01" value="1.00" />
+      </label>
+
+      <label class="field slider-field">
+        <span>地点与时间间距 <strong id="lineGapValue">1.00×</strong></span>
+        <input id="lineGapInput" type="range" min="0.3" max="2.5" step="0.01" value="1.00" />
+      </label>
+
+      <div class="actions">
+        <button id="autoColorBtn" type="button">重新取色</button>
+        <button id="downloadBtn" type="button" disabled>导出PNG</button>
+      </div>
+
+      <div class="live-readout">
+        <div><span>当前预览</span><strong id="liveTextPreview">Nyhavn, Copenhagen / 6:42 PM</strong></div>
+      </div>
+
+      <div class="color-grid">
+        <div class="color-row">
+          <div id="bgSwatch" class="swatch"></div>
+          <div class="color-meta">
+            <div>背景色</div>
+            <strong id="bgHexValue">#000000</strong>
+          </div>
+        </div>
+        <div class="color-row">
+          <div id="textSwatch" class="swatch"></div>
+          <div class="color-meta">
+            <div>字体色</div>
+            <strong id="textHexValue">#000000</strong>
+          </div>
+        </div>
+      </div>
+
+      <p class="note">说明：导出图宽度和下半部分原图一致，总高度固定为原图高度的2倍。导出PNG是重新编码的新文件，不会原样保留原文件的全部元数据。</p>
+    </section>
+
+    <section class="panel preview-panel">
+      <div class="preview-toolbar">
+        <span>实时预览</span>
+        <span id="sizeInfo">未加载图片</span>
+      </div>
+      <div class="preview-wrap">
+        <canvas id="previewCanvas"></canvas>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
