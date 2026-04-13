@@ -3,21 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PhotoColors静态版v11</title>
+  <title>PhotoColors静态版v13</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=Manrope:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Outfit:wght@500;600;700;800&family=Nunito+Sans:wght@600;700;800&family=Montserrat:wght@600;700;800&family=IBM+Plex+Sans:wght@500;600;700&family=Noto+Sans+SC:wght@500;700;800&display=swap" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/harmonyos-sans-webfont-splitted@1.2.1/dist/HarmonyOS_Sans/index.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/harmonyos-sans-sc-webfont-splitted@1.1.0/index.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/misans@4.1.0/index.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/@tslsmart/font-puhuiti@1.0.0/index.css" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <main class="app">
     <section class="panel controls">
-      <h1>PhotoColors-WEB V3</h1>
-     
+      <h1>PhotoColors静态版v13</h1>
+      <p class="desc">固定上下1:1。上半部分为取色背景与地点/时间，下半部分为原图。当前版本移除了额外中文字体预设，重点改回更稳的无衬线系统字体，并补充更柔和的字色与描边选项。</p>
 
       <label class="field upload-field">
         <span>上传照片</span>
@@ -44,14 +40,10 @@
       <label class="field">
         <span>字体选择</span>
         <select id="fontFamilySelect">
-          <option value="pingfang-original" selected>原版接近·苹方</option>
+          <option value="apple-cn" selected>原版接近·系统无衬线</option>
+          <option value="pingfang-original">苹方紧凑版</option>
           <option value="pingfang-soft">苹方柔和版</option>
-          <option value="harmony-cn">HarmonyOS Sans SC</option>
-          <option value="misans-cn">MiSans</option>
-          <option value="puhuiti-cn">阿里巴巴普惠体</option>
-          <option value="sourcehan-cn">思源黑体风格</option>
           <option value="noto-cn">Noto Sans SC</option>
-          <option value="apple-cn">Apple风格无衬线</option>
           <option value="inter">Inter + 中文无衬线</option>
           <option value="jakarta">Plus Jakarta Sans + 中文无衬线</option>
           <option value="manrope">Manrope + 中文无衬线</option>
@@ -81,7 +73,8 @@
         <label class="field compact-field">
           <span>字色风格</span>
           <select id="toneSelect">
-            <option value="elegant" selected>淡雅</option>
+            <option value="soft" selected>更柔和</option>
+            <option value="elegant">淡雅</option>
             <option value="balanced">平衡</option>
             <option value="vivid">鲜明</option>
           </select>
@@ -92,7 +85,7 @@
           <select id="outlineSelect">
             <option value="none">无描边</option>
             <option value="soft" selected>柔和描边</option>
-            <option value="clear">清晰描边</option>
+            <option value="mist">轻雾柔化</option>
           </select>
         </label>
       </div>
@@ -123,7 +116,7 @@
         </div>
       </div>
 
-    
+      <p class="note">说明：导出图宽度和下半部分原图一致，总高度固定为原图高度的2倍。导出PNG是重新编码的新文件，不会原样保留原文件的全部元数据。</p>
     </section>
 
     <section class="panel preview-panel">
