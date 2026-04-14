@@ -1,4 +1,3 @@
-
 const refs = {
   imageUpload: document.getElementById('imageUpload'),
   exportBtn: document.getElementById('exportBtn'),
@@ -38,6 +37,7 @@ const state = {
   theme: 'auto',
   image: null,
   imageName: 'photocolors-output',
+  sceneType: 'neutral',
   rawPalette: {
     dominant: { r: 213, g: 219, b: 230 },
     accent: { r: 108, g: 88, b: 72 },
@@ -271,11 +271,110 @@ function applyFontSize(template, sizePx) {
   return template.replace('1px', `${sizePx.toFixed(2)}px`);
 }
 
+function hueDistance(a, b) {
+  const d = Math.abs(a - b) % 360;
+  return Math.min(d, 360 - d);
+}
+
+function rgbToHex({ r, g, b }) {
+  const toHex = (v) => v.toString(16).padStart(2, '0');
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+function quantizeColor(r, g, b) {
+  const hsl = rgbToHsl(r, g, b);
+  return {
+    key: `${Math.round(hsl.h / 16)}-${Math.round(hsl.s * 10)}-${Math.round(hsl.l * 10)}`,
+    hsl,
+  };
+}
+
+function pickSceneType(stats) {
+  const total = Math.max(stats.totalWeight, 1);
+  const darkRatio = stats.darkWeight / total;
+  const skyRatio = stats.skyWeight / total;
+  const warmRatio = stats.warmWeight / total;
+  const neutralRatio = stats.neutralWeight / total;
+  const brightRatio = stats.brightWeight / total;
+
+  if (darkRatio > 0.42 && stats.warmLightWeight / total > 0.10) return 'night-warm';
+  if (skyRatio > 0.15 && brightRatio > 0.24) return 'airy-blue';
+  if (warmRatio > 0.24) return 'warm';
+  if (neutralRatio > 0.28) return 'neutral';
+  return 'soft-natural';
+}
+
+function scoreDominantCandidate(candidate, sceneType) {
+  const { h, s, l } = candidate.hsl;
+  let score = candidate.weight * 1.7 + candidate.count * 0.5;
+
+  if (l < 0.08 || l > 0.92) score -= 10;
+
+  if (sceneType === 'night-warm') {
+    if (l >= 0.22 && l <= 0.62) score += 7;
+    if (h >= 18 && h <= 55) score += 5.5;
+    if (s >= 0.12 && s <= 0.42) score += 4;
+    if (l < 0.14) score -= 7;
+  } else if (sceneType === 'airy-blue') {
+    if (l >= 0.60 && l <= 0.86) score += 7;
+    if ((h >= 185 && h <= 235) || s < 0.12) score += 5;
+    if (s >= 0.10 && s <= 0.38) score += 3.5;
+  } else if (sceneType === 'warm') {
+    if (l >= 0.38 && l <= 0.76) score += 6;
+    if ((h >= 20 && h <= 55) || (s < 0.16 && l > 0.45)) score += 5;
+    if (s >= 0.14 && s <= 0.50) score += 3.5;
+  } else if (sceneType === 'neutral') {
+    if (l >= 0.46 && l <= 0.76) score += 6;
+    if (s >= 0.04 && s <= 0.22) score += 5;
+    if (h >= 35 && h <= 95) score += 1.2;
+  } else {
+    if (l >= 0.44 && l <= 0.80) score += 6;
+    if (s >= 0.08 && s <= 0.34) score += 4;
+  }
+
+  return score;
+}
+
+function scoreAccentCandidate(candidate, dominant, sceneType) {
+  const { h, s, l } = candidate.hsl;
+  const dominantHsl = dominant.hsl;
+
+  let score = candidate.weight * 1.2 + candidate.count * 0.35;
+  const hd = hueDistance(h, dominantHsl.h);
+
+  if (l < 0.10 || l > 0.88) score -= 4;
+  if (s < 0.10) score -= 2.5;
+  if (hd < 6 && Math.abs(l - dominantHsl.l) < 0.08) score -= 3;
+
+  if (sceneType === 'night-warm') {
+    if (h >= 15 && h <= 48) score += 4.5;
+    if (s >= 0.18 && s <= 0.55) score += 3.5;
+    if (l >= 0.16 && l <= 0.42) score += 2.5;
+  } else if (sceneType === 'airy-blue') {
+    if ((h >= 200 && h <= 240) || (h >= 10 && h <= 40)) score += 3.5;
+    if (s >= 0.14 && s <= 0.50) score += 3;
+    if (l >= 0.20 && l <= 0.50) score += 2.5;
+  } else if (sceneType === 'warm') {
+    if (h >= 12 && h <= 42) score += 4;
+    if (s >= 0.18 && s <= 0.62) score += 3;
+    if (l >= 0.18 && l <= 0.44) score += 2.5;
+  } else if (sceneType === 'neutral') {
+    if (s >= 0.10 && s <= 0.36) score += 3;
+    if (l >= 0.16 && l <= 0.42) score += 3;
+    if (hd >= 10 && hd <= 55) score += 1.5;
+  } else {
+    if (s >= 0.14 && s <= 0.46) score += 3;
+    if (l >= 0.18 && l <= 0.46) score += 3;
+  }
+
+  return score;
+}
+
 function extractPalette(image) {
-  const maxSide = 220;
+  const maxSide = 260;
   const scale = Math.min(maxSide / image.naturalWidth, maxSide / image.naturalHeight, 1);
-  const width = Math.max(32, Math.round(image.naturalWidth * scale));
-  const height = Math.max(32, Math.round(image.naturalHeight * scale));
+  const width = Math.max(40, Math.round(image.naturalWidth * scale));
+  const height = Math.max(40, Math.round(image.naturalHeight * scale));
 
   const tempCanvas = document.createElement('canvas');
   tempCanvas.width = width;
@@ -286,74 +385,151 @@ function extractPalette(image) {
   const data = tempCtx.getImageData(0, 0, width, height).data;
   const bins = new Map();
 
-  let weightedR = 0;
-  let weightedG = 0;
-  let weightedB = 0;
-  let totalWeight = 0;
+  const stats = {
+    totalWeight: 0,
+    darkWeight: 0,
+    brightWeight: 0,
+    skyWeight: 0,
+    warmWeight: 0,
+    warmLightWeight: 0,
+    neutralWeight: 0,
+  };
 
-  for (let i = 0; i < data.length; i += 20) {
-    const a = data[i + 3];
-    if (a < 220) continue;
+  for (let y = 0; y < height; y += 2) {
+    for (let x = 0; x < width; x += 2) {
+      const i = (y * width + x) * 4;
+      const a = data[i + 3];
+      if (a < 220) continue;
 
-    const r = data[i];
-    const g = data[i + 1];
-    const b = data[i + 2];
-    const hsl = rgbToHsl(r, g, b);
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      const { key, hsl } = quantizeColor(r, g, b);
+      const { h, s, l } = hsl;
 
-    const satWeight = 0.55 + hsl.s * 1.15;
-    const lightPenalty = (hsl.l < 0.05 || hsl.l > 0.96) ? 0.15 : 1;
-    const weight = satWeight * lightPenalty;
+      const isUpper = y < height * 0.58;
+      const isCenter = x > width * 0.18 && x < width * 0.82;
+      const regionWeight = (isUpper ? 1.15 : 1) * (isCenter ? 1.08 : 1);
 
-    weightedR += r * weight;
-    weightedG += g * weight;
-    weightedB += b * weight;
-    totalWeight += weight;
+      let colorWeight = 1;
+      if (l < 0.05 || l > 0.96) colorWeight *= 0.12;
+      else if (l < 0.12 || l > 0.90) colorWeight *= 0.55;
+      else colorWeight *= 1;
 
-    const key = `${Math.round(r / 24)}-${Math.round(g / 24)}-${Math.round(b / 24)}`;
-    const existing = bins.get(key) || { r: 0, g: 0, b: 0, count: 0, score: 0, sat: 0, light: 0 };
-    existing.r += r;
-    existing.g += g;
-    existing.b += b;
-    existing.count += 1;
-    existing.score += weight;
-    existing.sat += hsl.s;
-    existing.light += hsl.l;
-    bins.set(key, existing);
+      if (s >= 0.10 && s <= 0.48) colorWeight *= 1.08;
+      if (s > 0.70) colorWeight *= 0.82;
+
+      const weight = regionWeight * colorWeight;
+
+      stats.totalWeight += weight;
+      if (l < 0.16) stats.darkWeight += weight;
+      if (l > 0.72) stats.brightWeight += weight;
+      if (isUpper && h >= 185 && h <= 240 && s > 0.10 && l > 0.45) stats.skyWeight += weight;
+      if (h >= 16 && h <= 55 && s > 0.14 && l > 0.14 && l < 0.82) stats.warmWeight += weight;
+      if (h >= 16 && h <= 55 && s > 0.14 && l > 0.26) stats.warmLightWeight += weight;
+      if (s < 0.18 && l > 0.18 && l < 0.82) stats.neutralWeight += weight;
+
+      const existing = bins.get(key) || {
+        r: 0, g: 0, b: 0,
+        count: 0,
+        weight: 0,
+        h: 0, s: 0, l: 0,
+      };
+
+      existing.r += r * weight;
+      existing.g += g * weight;
+      existing.b += b * weight;
+      existing.h += h * weight;
+      existing.s += s * weight;
+      existing.l += l * weight;
+      existing.count += 1;
+      existing.weight += weight;
+
+      bins.set(key, existing);
+    }
   }
 
-  const dominant = totalWeight > 0 ? {
-    r: Math.round(weightedR / totalWeight),
-    g: Math.round(weightedG / totalWeight),
-    b: Math.round(weightedB / totalWeight),
-  } : { r: 213, g: 219, b: 230 };
-
   const candidates = [...bins.values()]
-    .map((bin) => ({
-      r: Math.round(bin.r / bin.count),
-      g: Math.round(bin.g / bin.count),
-      b: Math.round(bin.b / bin.count),
-      sat: bin.sat / bin.count,
-      light: bin.light / bin.count,
-      score: bin.score / Math.max(1, bin.count),
-    }))
-    .sort((a, b) => (b.score + b.sat * 0.8) - (a.score + a.sat * 0.8));
+    .filter((bin) => bin.weight > 0.4)
+    .map((bin) => {
+      const rgb = {
+        r: Math.round(bin.r / bin.weight),
+        g: Math.round(bin.g / bin.weight),
+        b: Math.round(bin.b / bin.weight),
+      };
+      const hsl = {
+        h: bin.h / bin.weight,
+        s: bin.s / bin.weight,
+        l: bin.l / bin.weight,
+      };
+      return {
+        ...rgb,
+        hsl,
+        count: bin.count,
+        weight: bin.weight,
+      };
+    });
 
-  let accent = candidates.find((item) => item.sat > 0.22 && item.light > 0.12 && item.light < 0.84);
-  if (!accent) accent = candidates.find((item) => item.sat > 0.12);
-  if (!accent) accent = dominant;
+  const sceneType = pickSceneType(stats);
+
+  let dominant = candidates[0];
+  let bestDominantScore = -Infinity;
+
+  for (const candidate of candidates) {
+    const score = scoreDominantCandidate(candidate, sceneType);
+    if (score > bestDominantScore) {
+      bestDominantScore = score;
+      dominant = candidate;
+    }
+  }
+
+  if (!dominant) {
+    dominant = { r: 213, g: 219, b: 230, hsl: rgbToHsl(213, 219, 230) };
+  }
+
+  let accent = dominant;
+  let bestAccentScore = -Infinity;
+
+  for (const candidate of candidates) {
+    const score = scoreAccentCandidate(candidate, dominant, sceneType);
+    if (score > bestAccentScore) {
+      bestAccentScore = score;
+      accent = candidate;
+    }
+  }
 
   return {
-    dominant,
+    dominant: { r: dominant.r, g: dominant.g, b: dominant.b },
     accent: { r: accent.r, g: accent.g, b: accent.b },
+    sceneType,
   };
 }
 
-function softenBackground(color, softness = 60) {
+function softenBackground(color, softness = 60, sceneType = 'neutral') {
   const hsl = rgbToHsl(color.r, color.g, color.b);
-  const satFloor = 0.16;
-  const satTarget = clamp(Math.max(satFloor, hsl.s * (0.72 - softness / 240)), 0.14, 0.48);
-  const lightTarget = clamp(0.70 + softness / 520 + (0.50 - Math.abs(hsl.l - 0.50)) * 0.10, 0.66, 0.84);
-  return hslToRgb(hsl.h, satTarget, lightTarget);
+  const t = clamp(softness / 100, 0, 1);
+
+  let targetS = hsl.s;
+  let targetL = hsl.l;
+
+  if (sceneType === 'airy-blue') {
+    targetS = clamp(hsl.s * (0.96 - t * 0.08), 0.12, 0.42);
+    targetL = clamp(hsl.l + 0.03 + t * 0.04, 0.64, 0.84);
+  } else if (sceneType === 'night-warm') {
+    targetS = clamp(hsl.s * (0.96 - t * 0.06), 0.14, 0.46);
+    targetL = clamp(hsl.l + t * 0.02, 0.24, 0.56);
+  } else if (sceneType === 'warm') {
+    targetS = clamp(hsl.s * (0.94 - t * 0.10), 0.14, 0.48);
+    targetL = clamp(hsl.l + 0.02 + t * 0.03, 0.42, 0.74);
+  } else if (sceneType === 'neutral') {
+    targetS = clamp(Math.max(hsl.s * 0.78, 0.05), 0.05, 0.20);
+    targetL = clamp(hsl.l + 0.04 + t * 0.03, 0.56, 0.78);
+  } else {
+    targetS = clamp(hsl.s * (0.90 - t * 0.10), 0.08, 0.34);
+    targetL = clamp(hsl.l + 0.03 + t * 0.03, 0.50, 0.78);
+  }
+
+  return hslToRgb(hsl.h, targetS, targetL);
 }
 
 function applyThemeBias(baseBg, themeName, softness = 60) {
@@ -370,18 +546,37 @@ function applyThemeBias(baseBg, themeName, softness = 60) {
   );
 }
 
-function accentFromImage(rawAccent, bg, themeName) {
-  const theme = THEMES[themeName] || THEMES.auto;
+function accentFromImage(rawAccent, bg, themeName, sceneType = 'neutral') {
   const accentHsl = rgbToHsl(rawAccent.r, rawAccent.g, rawAccent.b);
   const bgHsl = rgbToHsl(bg.r, bg.g, bg.b);
+  const bgLum = luminance(bg);
 
-  let hue = accentHsl.s > 0.10 ? accentHsl.h : bgHsl.h + 180;
-  hue += theme.accentHueShift;
+  let hue = accentHsl.h;
+  let sat = accentHsl.s;
+  let light = accentHsl.l;
 
-  const sat = clamp(Math.max(accentHsl.s * 1.02, 0.20), 0.20, 0.76);
-  const light = luminance(bg) > 0.62
-    ? clamp(Math.min(accentHsl.l * 0.72, 0.36), 0.16, 0.42)
-    : clamp(Math.max(accentHsl.l * 1.12, 0.62), 0.58, 0.84);
+  if (accentHsl.s < 0.10) {
+    if (sceneType === 'night-warm' || sceneType === 'warm') hue = 28;
+    else if (sceneType === 'airy-blue') hue = bgHsl.h >= 180 && bgHsl.h <= 235 ? bgHsl.h - 12 : 215;
+    else hue = bgHsl.h + 18;
+  }
+
+  if (sceneType === 'night-warm') {
+    sat = clamp(Math.max(sat, 0.18), 0.18, 0.56);
+    light = bgLum > 0.50 ? 0.24 : 0.72;
+  } else if (sceneType === 'airy-blue') {
+    sat = clamp(Math.max(sat * 0.86, 0.14), 0.14, 0.42);
+    light = bgLum > 0.50 ? 0.30 : 0.76;
+  } else if (sceneType === 'warm') {
+    sat = clamp(Math.max(sat * 0.90, 0.18), 0.18, 0.52);
+    light = bgLum > 0.50 ? 0.26 : 0.74;
+  } else if (sceneType === 'neutral') {
+    sat = clamp(Math.max(sat * 0.78, 0.10), 0.10, 0.28);
+    light = bgLum > 0.50 ? 0.30 : 0.76;
+  } else {
+    sat = clamp(Math.max(sat * 0.84, 0.12), 0.12, 0.36);
+    light = bgLum > 0.50 ? 0.30 : 0.76;
+  }
 
   return hslToRgb(hue, sat, light);
 }
@@ -404,47 +599,61 @@ function ensureContrast(color, bg, ratio) {
   return color;
 }
 
-function createTextColor(accent, bg, toneMode, softness) {
+function createTextColor(accent, bg, toneMode, softness, sceneType = 'neutral') {
   const bgLum = luminance(bg);
-  const hsl = rgbToHsl(accent.r, accent.g, accent.b);
-  let color;
+  const accentHsl = rgbToHsl(accent.r, accent.g, accent.b);
+  const bgHsl = rgbToHsl(bg.r, bg.g, bg.b);
+
+  let hue = accentHsl.h;
+  let sat = accentHsl.s;
+  let light = accentHsl.l;
+
+  if (accentHsl.s < 0.08) {
+    if (sceneType === 'night-warm' || sceneType === 'warm') hue = 26;
+    else if (sceneType === 'airy-blue') hue = bgHsl.h - 10;
+    else hue = bgHsl.h + 15;
+  }
+
+  if (bgLum > 0.56) {
+    if (sceneType === 'night-warm') {
+      sat = clamp(Math.max(sat, 0.22), 0.22, 0.58);
+      light = 0.18;
+    } else if (sceneType === 'warm') {
+      sat = clamp(Math.max(sat, 0.18), 0.18, 0.52);
+      light = 0.24;
+    } else if (sceneType === 'airy-blue') {
+      sat = clamp(Math.max(sat * 0.72, 0.12), 0.12, 0.36);
+      light = 0.34;
+    } else if (sceneType === 'neutral') {
+      sat = clamp(Math.max(sat * 0.62, 0.08), 0.08, 0.22);
+      light = 0.30;
+    } else {
+      sat = clamp(Math.max(sat * 0.68, 0.10), 0.10, 0.30);
+      light = 0.28;
+    }
+  } else {
+    sat = clamp(Math.max(sat * 0.85, 0.12), 0.12, 0.42);
+    light = 0.80;
+  }
+
+  let color = hslToRgb(hue, sat, light);
+
+  let mixAmount = 0.08;
+  let minRatio = 2.7;
 
   if (toneMode === 'soft') {
-    color = hslToRgb(
-      hsl.h,
-      clamp(hsl.s * 0.56, 0.10, 0.34),
-      bgLum > 0.60 ? clamp(hsl.l * 0.94, 0.18, 0.42) : clamp(hsl.l * 1.04, 0.58, 0.84)
-    );
-    color = mix(color, bg, 0.28 + softness / 450);
-    return ensureContrast(color, bg, 2.0);
+    mixAmount = 0.16;
+    minRatio = 2.1;
+  } else if (toneMode === 'balanced') {
+    mixAmount = 0.06;
+    minRatio = 2.9;
+  } else if (toneMode === 'vivid') {
+    mixAmount = 0;
+    minRatio = 3.2;
   }
 
-  if (toneMode === 'balanced') {
-    color = hslToRgb(
-      hsl.h,
-      clamp(hsl.s * 0.82, 0.16, 0.48),
-      bgLum > 0.60 ? clamp(hsl.l * 0.88, 0.14, 0.40) : clamp(hsl.l * 1.02, 0.54, 0.84)
-    );
-    color = mix(color, bg, 0.14 + softness / 950);
-    return ensureContrast(color, bg, 2.7);
-  }
-
-  if (toneMode === 'vivid') {
-    color = hslToRgb(
-      hsl.h,
-      clamp(hsl.s * 1.06 + 0.04, 0.24, 0.76),
-      bgLum > 0.60 ? clamp(hsl.l * 0.82, 0.14, 0.36) : clamp(hsl.l * 1.08, 0.62, 0.90)
-    );
-    return ensureContrast(color, bg, 3.1);
-  }
-
-  color = hslToRgb(
-    hsl.h,
-    clamp(hsl.s * 0.68, 0.12, 0.42),
-    bgLum > 0.60 ? clamp(hsl.l * 0.90, 0.16, 0.38) : clamp(hsl.l * 1.02, 0.56, 0.82)
-  );
-  color = mix(color, bg, 0.18 + softness / 700);
-  return ensureContrast(color, bg, 2.35);
+  color = mix(color, bg, mixAmount);
+  return ensureContrast(color, bg, minRatio);
 }
 
 function getEdgeStyle(textColor, bg, edgeMode) {
@@ -472,12 +681,13 @@ function updatePalette() {
 
   const raw = extractPalette(state.image);
   state.rawPalette = raw;
+  state.sceneType = raw.sceneType || 'neutral';
 
   const softness = Number(refs.softness.value);
-  const autoBg = softenBackground(raw.dominant, softness);
+  const autoBg = softenBackground(raw.dominant, softness, state.sceneType);
   const themedBg = applyThemeBias(autoBg, state.theme, softness);
-  const accent = accentFromImage(raw.accent, themedBg, state.theme);
-  const text = createTextColor(accent, themedBg, refs.toneMode.value, softness);
+  const accent = accentFromImage(raw.accent, themedBg, state.theme, state.sceneType);
+  const text = createTextColor(accent, themedBg, refs.toneMode.value, softness, state.sceneType);
 
   state.palette = { bg: themedBg, text, accent };
 }
