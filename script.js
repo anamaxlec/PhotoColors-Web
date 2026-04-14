@@ -25,17 +25,46 @@ const refs = {
   placeholder: document.getElementById('placeholder'),
   dropZone: document.getElementById('dropZone'),
   themeToggle: document.getElementById('themeToggle'),
+  whiteBorder: document.getElementById('whiteBorder'),
+  blackBorder: document.getElementById('blackBorder'),
+  whiteBorderValue: document.getElementById('whiteBorderValue'),
+  blackBorderValue: document.getElementById('blackBorderValue'),
+  bgSwatch: document.getElementById('bgSwatch'),
+  textSwatch: document.getElementById('textSwatch'),
+  bgHexValue: document.getElementById('bgHexValue'),
+  textHexValue: document.getElementById('textHexValue'),
+  liveTextPreview: document.getElementById('liveTextPreview'),
 };
 
 if (!refs.exportBtnSide) refs.exportBtnSide = refs.exportBtn;
 
-const previewCtx = refs.previewCanvas.getContext('2d', { alpha: false });
+function create2DContext(canvas, willReadFrequently = false) {
+  const candidates = [
+    { alpha: false, colorSpace: 'display-p3', colorType: 'float16', willReadFrequently },
+    { alpha: false, colorSpace: 'display-p3', willReadFrequently },
+    { alpha: false, willReadFrequently },
+  ];
+
+  for (const options of candidates) {
+    try {
+      const ctx = canvas.getContext('2d', options);
+      if (ctx) return ctx;
+    } catch (error) {
+      // ignore and fallback
+    }
+  }
+
+  return canvas.getContext('2d', { alpha: false, willReadFrequently });
+}
+
+const previewCtx = create2DContext(refs.previewCanvas, false);
 const exportCanvas = document.createElement('canvas');
-const exportCtx = exportCanvas.getContext('2d', { alpha: false });
+const exportCtx = create2DContext(exportCanvas, false);
 
 const state = {
   theme: 'auto',
   image: null,
+  originalFile: null,
   imageName: 'photocolors-output',
   sceneType: 'neutral',
   rawPalette: {
@@ -265,6 +294,30 @@ function getFontPreset() {
 
 function applyFontSize(template, sizePx) {
   return template.replace('1px', `${sizePx.toFixed(2)}px`);
+}
+
+function rgbToCss({ r, g, b }) {
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+function rgbToHex({ r, g, b }) {
+  const toHex = (value) => value.toString(16).padStart(2, '0').toUpperCase();
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+function getFrameSettings(scale = 1, contentWidth = 0, contentHeight = 0) {
+  const whiteBorderPercent = Number(refs.whiteBorder?.value || 0);
+  const blackBorderPx = Number(refs.blackBorder?.value || 0);
+  const base = Math.max(1, Math.min(contentWidth || 1, contentHeight || 1));
+  const whiteBorder = Math.round(base * (whiteBorderPercent / 100) * scale);
+  const blackBorder = blackBorderPx * scale;
+
+  return {
+    whiteBorderPercent,
+    blackBorderPx,
+    whiteBorder,
+    blackBorder,
+  };
 }
 
 function hueDistance(a, b) {
@@ -762,6 +815,24 @@ function syncControlReadouts() {
   refs.gapValue.textContent = `${Number(refs.lineGap.value).toFixed(2)}×`;
   refs.textYValue.textContent = `${refs.textY.value}%`;
   refs.softnessValue.textContent = refs.softness.value;
+  if (refs.whiteBorderValue) refs.whiteBorderValue.textContent = `${Number(refs.whiteBorder?.value || 0).toFixed(1).replace(/\.0$/, '')}%`;
+  if (refs.blackBorderValue) refs.blackBorderValue.textContent = `${Number(refs.blackBorder?.value || 0).toFixed(1).replace(/\.0$/, '')}px`;
+}
+
+function updateLivePreviewInfo() {
+  if (refs.liveTextPreview) {
+    const parts = [];
+    const location = refs.locationInput.value.trim();
+    const time = refs.timeInput.value.trim();
+    if (refs.showLocation.checked && location) parts.push(location);
+    if (refs.showTime.checked && time) parts.push(time);
+    refs.liveTextPreview.textContent = parts.join(' / ') || '未显示文字';
+  }
+
+  if (refs.bgSwatch) refs.bgSwatch.style.background = rgbToCss(state.palette.bg);
+  if (refs.textSwatch) refs.textSwatch.style.background = rgbToCss(state.palette.text);
+  if (refs.bgHexValue) refs.bgHexValue.textContent = rgbToHex(state.palette.bg);
+  if (refs.textHexValue) refs.textHexValue.textContent = rgbToHex(state.palette.text);
 }
 
 function drawCenteredText(ctx, text, x, y, font, color, edge) {
@@ -788,39 +859,45 @@ function renderToCanvas(ctx, canvas, maxPreviewWidth = null) {
 
   const photoW = state.image.naturalWidth;
   const photoH = state.image.naturalHeight;
-  const exportW = photoW;
-  const exportH = photoH * 2;
+  const contentW = photoW;
+  const contentH = photoH * 2;
 
-  let targetW = exportW;
-  let targetH = exportH;
   let scale = 1;
-
   if (maxPreviewWidth) {
-    scale = Math.min(maxPreviewWidth / exportW, 1);
-    targetW = Math.max(1, Math.round(exportW * scale));
-    targetH = Math.max(1, Math.round(exportH * scale));
+    scale = Math.min(maxPreviewWidth / contentW, 1);
   }
+
+  const frame = getFrameSettings(scale, contentW, contentH);
+  const targetContentW = Math.max(1, Math.round(contentW * scale));
+  const targetContentH = Math.max(1, Math.round(contentH * scale));
+  const targetW = targetContentW + frame.whiteBorder * 2;
+  const targetH = targetContentH + frame.whiteBorder * 2;
+  const contentX = frame.whiteBorder;
+  const contentY = frame.whiteBorder;
 
   canvas.width = targetW;
   canvas.height = targetH;
 
   ctx.clearRect(0, 0, targetW, targetH);
-  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingEnabled = !!maxPreviewWidth;
   ctx.imageSmoothingQuality = 'high';
+
+  ctx.fillStyle = 'rgb(255, 255, 255)';
+  ctx.fillRect(0, 0, targetW, targetH);
 
   const bg = state.palette.bg;
   const text = state.palette.text;
   const topH = Math.round(photoH * scale);
-  const bottomY = topH;
+  const bottomY = contentY + topH;
   const drawW = Math.round(photoW * scale);
   const drawH = Math.round(photoH * scale);
 
-  ctx.fillStyle = `rgb(${bg.r}, ${bg.g}, ${bg.b})`;
-  ctx.fillRect(0, 0, targetW, topH);
-  ctx.drawImage(state.image, 0, bottomY, drawW, drawH);
+  ctx.fillStyle = rgbToCss(bg);
+  ctx.fillRect(contentX, contentY, targetContentW, topH);
+  ctx.drawImage(state.image, contentX, bottomY, drawW, drawH);
 
   const fontPreset = getFontPreset();
-  const baseLocationSize = clamp(exportW * 0.052, 32, 160) * Number(refs.locationSize.value) * scale;
+  const baseLocationSize = clamp(contentW * 0.052, 32, 160) * Number(refs.locationSize.value) * scale;
   const baseTimeSize = clamp(baseLocationSize * 0.52, 16, 72) * Number(refs.timeSize.value);
   const lineGap = Math.max(6 * scale, baseTimeSize * 0.36 * Number(refs.lineGap.value));
 
@@ -845,28 +922,46 @@ function renderToCanvas(ctx, canvas, maxPreviewWidth = null) {
 
   if (blocks.length > 0) {
     const totalHeight = blocks.reduce((sum, item) => sum + item.size, 0) + (blocks.length - 1) * lineGap;
-    const centerY = topH * (Number(refs.textY.value) / 100);
+    const centerY = contentY + topH * (Number(refs.textY.value) / 100);
     let currentY = centerY - totalHeight / 2;
     const edge = getEdgeStyle(text, bg, refs.edgeMode.value);
 
     for (const item of blocks) {
       currentY += item.size * 0.82;
-      drawCenteredText(ctx, item.text, targetW / 2, currentY, item.font, text, edge);
+      drawCenteredText(ctx, item.text, contentX + targetContentW / 2, currentY, item.font, text, edge);
       currentY += item.size * 0.18 + lineGap;
     }
   }
 
+  if (frame.blackBorder > 0) {
+    ctx.save();
+    ctx.strokeStyle = 'rgb(0, 0, 0)';
+    ctx.lineWidth = frame.blackBorder;
+    const inset = frame.blackBorder / 2;
+    ctx.strokeRect(
+      contentX + inset,
+      contentY + inset,
+      targetContentW - frame.blackBorder,
+      targetContentH - frame.blackBorder,
+    );
+    ctx.restore();
+  }
+
   if (!maxPreviewWidth) {
-    if (refs.exportSize) refs.exportSize.textContent = `${exportW} × ${exportH}`;
-    if (refs.previewMeta) refs.previewMeta.textContent = `${exportW} × ${exportH}导出｜原图${photoW} × ${photoH}｜${THEMES[state.theme].label}｜${state.sceneType}`;
+    if (refs.exportSize) refs.exportSize.textContent = `${targetW} × ${targetH}`;
+    if (refs.previewMeta) {
+      refs.previewMeta.textContent = `${targetW} × ${targetH}导出｜内容区${contentW} × ${contentH}｜原图${photoW} × ${photoH}｜${THEMES[state.theme].label}｜${state.sceneType}`;
+    }
   }
 }
 
 function renderAll() {
   syncControlReadouts();
+  updateLivePreviewInfo();
   if (!state.image) return;
 
   updatePalette();
+  updateLivePreviewInfo();
   renderToCanvas(exportCtx, exportCanvas, null);
   renderToCanvas(previewCtx, refs.previewCanvas, 1080);
 
@@ -881,6 +976,7 @@ function loadImageFromFile(file) {
   const image = new Image();
   image.onload = () => {
     state.image = image;
+    state.originalFile = file;
     state.imageName = file.name.replace(/\.[^/.]+$/, '') || 'photocolors-output';
     renderAll();
     URL.revokeObjectURL(url);
@@ -932,6 +1028,8 @@ refs.imageUpload.addEventListener('change', (event) => {
   refs.toneMode,
   refs.edgeMode,
   refs.softness,
+  refs.whiteBorder,
+  refs.blackBorder,
 ].forEach((el) => {
   el.addEventListener('input', renderAll);
   el.addEventListener('change', renderAll);
@@ -984,5 +1082,6 @@ refs.themeToggle?.addEventListener('click', () => {
 });
 
 syncControlReadouts();
+updateLivePreviewInfo();
 if (refs.exportBtn) refs.exportBtn.disabled = true;
 if (refs.exportBtnSide) refs.exportBtnSide.disabled = true;
