@@ -6,7 +6,7 @@
   <title>PhotoColors — 照片色彩编辑器</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Nunito+Sans:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
@@ -110,7 +110,7 @@
               <span>地点字号</span>
               <span>{{ locationSizeValue }}</span>
             </div>
-            <input type="range" min="0.7" max="1.6" step="0.01" v-model.number="locationSize" @input="updateAll()" />
+            <input type="range" min="0.7" max="1.6" step="0.01" v-model.number="locationSize" @input="scheduleUpdate()" />
           </label>
 
           <label class="slider-row">
@@ -118,7 +118,7 @@
               <span>时间字号</span>
               <span>{{ timeSizeValue }}</span>
             </div>
-            <input type="range" min="0.7" max="1.6" step="0.01" v-model.number="timeSize" @input="updateAll()" />
+            <input type="range" min="0.7" max="1.6" step="0.01" v-model.number="timeSize" @input="scheduleUpdate()" />
           </label>
 
           <label class="slider-row">
@@ -126,7 +126,7 @@
               <span>行间距</span>
               <span>{{ gapValue }}</span>
             </div>
-            <input type="range" min="0.5" max="2.2" step="0.01" v-model.number="lineGap" @input="updateAll()" />
+            <input type="range" min="0.5" max="2.2" step="0.01" v-model.number="lineGap" @input="scheduleUpdate()" />
           </label>
 
           <label class="slider-row">
@@ -134,7 +134,7 @@
               <span>文字纵向位置</span>
               <span>{{ textYValue }}</span>
             </div>
-            <input type="range" min="28" max="70" step="1" v-model.number="textY" @input="updateAll()" />
+            <input type="range" min="28" max="70" step="1" v-model.number="textY" @input="scheduleUpdate()" />
           </label>
         </section>
 
@@ -176,15 +176,17 @@
               <span>柔和程度</span>
               <span>{{ softnessValue }}</span>
             </div>
-            <input type="range" min="0" max="100" v-model.number="softness" @input="updateAll()" />
+            <input type="range" min="0" max="100" v-model.number="softness" @input="scheduleUpdate()" />
           </label>
 
           <div class="field-label field-label-top">取色模式</div>
-          <div class="theme-swatches">
+          <div class="theme-swatches" role="radiogroup" aria-label="取色模式">
             <button
               v-for="t in themeNames" :key="t"
               class="swatch" :class="[t, { 'is-active': theme === t }]"
               :data-theme="t" type="button"
+              role="radio"
+              :aria-checked="theme === t"
               :aria-label="themeLabels[t]" :title="themeLabels[t]"
               @click="setTheme(t)"
             ></button>
@@ -227,7 +229,7 @@
               <span>白边宽度</span>
               <span>{{ whiteBorderValue }}</span>
             </div>
-            <input type="range" min="0" max="20" step="0.5" v-model.number="whiteBorder" @input="updateAll()" />
+            <input type="range" min="0" max="20" step="0.5" v-model.number="whiteBorder" @input="scheduleUpdate()" />
           </label>
 
           <label class="slider-row">
@@ -235,7 +237,7 @@
               <span>黑线宽度</span>
               <span>{{ blackBorderValue }}</span>
             </div>
-            <input type="range" min="0" max="12" step="0.5" v-model.number="blackBorder" @input="updateAll()" />
+            <input type="range" min="0" max="12" step="0.5" v-model.number="blackBorder" @input="scheduleUpdate()" />
           </label>
         </section>
 
@@ -326,6 +328,7 @@
         </div>
 
         <input id="imageUpload" type="file" accept="image/*" hidden />
+        <div v-if="imageError" class="image-error">{{ imageError }}</div>
         <input id="batchUpload" type="file" accept="image/*" multiple hidden />
         <input id="templateImport" type="file" accept=".json" hidden />
       </aside>
@@ -340,7 +343,7 @@
         </div>
 
         <div class="preview-stage" id="dropZone">
-          <canvas id="previewCanvas"></canvas>
+          <canvas id="previewCanvas" role="img" aria-label="照片色彩编辑器实时预览"></canvas>
           <div class="placeholder" id="placeholder">
             <div class="placeholder-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none">

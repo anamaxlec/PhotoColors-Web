@@ -122,7 +122,7 @@ export function renderToCanvas(
   canvas.height = targetH;
 
   ctx.clearRect(0, 0, targetW, targetH);
-  ctx.imageSmoothingEnabled = !!maxPreviewWidth;
+  ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
 
   ctx.fillStyle = 'rgb(255, 255, 255)';

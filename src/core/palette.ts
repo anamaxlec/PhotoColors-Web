@@ -397,6 +397,10 @@ export function createTextColor(accent: RgbColor, bg: RgbColor, toneMode: ToneMo
 
 export function updatePalette(image: HTMLImageElement, themeName: ThemeName, toneMode: ToneMode, softness: number, sceneType: SceneType) {
   const raw = extractPalette(image);
+  return rebuildPalette(raw, themeName, toneMode, softness);
+}
+
+export function rebuildPalette(raw: { dominant: RgbColor; accent: RgbColor; sceneType: SceneType }, themeName: ThemeName, toneMode: ToneMode, softness: number) {
   const autoBg = softenBackground(raw.dominant, softness, raw.sceneType);
   const themedBg = applyThemeBias(autoBg, themeName, softness, raw.sceneType);
   const accent = accentFromImage(raw.accent, themedBg, raw.sceneType);

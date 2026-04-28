@@ -3,7 +3,7 @@ import type {
   RgbColor, ThemeName, ToneMode, EdgeMode, SceneType,
   Template, BatchTask, TemplateSettings,
 } from '@/core/types';
-import { updatePalette, THEMES } from '@/core/palette';
+import { extractPalette, updatePalette, rebuildPalette, THEMES } from '@/core/palette';
 import { renderToCanvas, create2DContext } from '@/core/renderer';
 import { rgbToHex, rgbToCss } from '@/core/color';
 import { readExif } from '@/features/exif/reader';
@@ -15,6 +15,7 @@ import {
 import { processBatch, exportAsZip } from '@/features/batch/manager';
 import type { RenderOptions } from '@/core/renderer';
 import { BORDER_PRESETS, getBorderPreset } from '@/features/border/presets';
+import { ensureFontLoaded } from '@/core/font-loader';
 
 const UI_THEME_KEY = 'photocolors-ui-theme';
 
@@ -34,6 +35,13 @@ let previewCtx: CanvasRenderingContext2D | null = null;
 let exportCtx: CanvasRenderingContext2D | null = null;
 let previewCanvas: HTMLCanvasElement | null = null;
 let exportCanvas: HTMLCanvasElement | null = null;
+
+// P0-3: Palette cache — re-extract only when image changes
+let cachedRawPalette: { dominant: RgbColor; accent: RgbColor; sceneType: SceneType } | null = null;
+let paletteImageSrc: string | null = null;
+
+// P0-1: rAF debounce — merge rapid slider updates into one frame
+let rafId: number | null = null;
 
 function initCanvas(): void {
   previewCanvas = document.getElementById('previewCanvas') as HTMLCanvasElement;
@@ -64,21 +72,22 @@ function getRenderOptions(s: AppStore): RenderOptions {
 }
 
 export interface AppStore {
-  // UI
+  // --- UI ---
   uiTheme: 'light' | 'dark';
-  // Image
+  // --- Image ---
   image: HTMLImageElement | null;
   originalFile: File | null;
   imageName: string;
-  // Palette
+  imageError: string;
+  // --- Palette ---
   sceneType: SceneType;
   palette: { bg: RgbColor; text: RgbColor; accent: RgbColor };
-  // Theme
+  // --- Theme ---
   theme: ThemeName;
   THEMES: typeof THEMES;
   themeNames: ThemeName[];
   themeLabels: Record<ThemeName, string>;
-  // Controls
+  // --- Controls ---
   location: string;
   time: string;
   showLocation: boolean;
@@ -93,10 +102,10 @@ export interface AppStore {
   softness: number;
   whiteBorder: number;
   blackBorder: number;
-  // Border presets
+  // --- Border presets ---
   borderPreset: string;
   borderPresets: typeof BORDER_PRESETS;
-  // Derived
+  // --- Derived readouts ---
   exportSize: string;
   exportReady: boolean;
   liveTextPreview: string;
@@ -112,36 +121,37 @@ export interface AppStore {
   softnessValue: string;
   whiteBorderValue: string;
   blackBorderValue: string;
-  // Templates
+  // --- Templates ---
   templates: Template[];
   activeTemplateId: string | null;
   showTemplatePanel: boolean;
   newTemplateName: string;
-  // Batch
+  // --- Batch ---
   batchTasks: BatchTask[];
   batchMode: boolean;
   batchQueueCount: number;
   batchDoneCount: number;
-  // Methods
+  // --- Core methods ---
   toggleTheme(): void;
   loadImageFromFile(file: File): void;
   handleExport(): void;
   setTheme(themeName: ThemeName): void;
   updateAll(): void;
+  scheduleUpdate(): void;
+  recolor(): void;
+  applyBorderPreset(id: string): void;
   syncReadouts(): void;
   syncPreview(): void;
   syncBatchCounts(): void;
-  recolor(): void;
-  applyBorderPreset(id: string): void;
-  // EXIF
+  // --- EXIF ---
   readExifFromFile(): Promise<void>;
-  // Template methods
+  // --- Template methods ---
   saveAsTemplate(name: string): void;
   applyTemplate(tplId: string): void;
   removeTemplate(tplId: string): void;
   exportTemplateById(tplId: string): void;
   importTemplateFromFile(file: File): Promise<void>;
-  // Batch methods
+  // --- Batch methods ---
   addBatchFiles(files: FileList): void;
   startBatchProcess(): void;
   exportBatchZip(): void;
@@ -171,6 +181,7 @@ export function createStore(): AppStore {
     image: null,
     originalFile: null,
     imageName: 'photocolors-output',
+    imageError: '',
     sceneType: 'neutral' as SceneType,
     palette: { bg: defaultBg, text: defaultText, accent: defaultAccent },
     theme: 'auto' as ThemeName,
@@ -225,6 +236,7 @@ export function createStore(): AppStore {
     },
 
     loadImageFromFile(file: File) {
+      this.imageError = '';
       const url = URL.createObjectURL(file);
       const img = new Image();
       img.onload = () => {
@@ -232,10 +244,17 @@ export function createStore(): AppStore {
         this.originalFile = file;
         this.imageName = file.name.replace(/\.[^/.]+$/, '') || 'photocolors-output';
 
+        // P0-3: Pre-cache palette extraction for this image
+        cachedRawPalette = extractPalette(img);
+        paletteImageSrc = img.src;
+
         this.readExifFromFile().then(() => {
           this.updateAll();
         });
         this.updateAll();
+      };
+      img.onerror = () => {
+        this.imageError = '图片加载失败，请检查文件格式';
         URL.revokeObjectURL(url);
       };
       img.src = url;
@@ -251,11 +270,14 @@ export function createStore(): AppStore {
 
     setTheme(themeName: ThemeName) {
       this.theme = themeName;
+      cachedRawPalette = null; // P0-3: theme change needs palette recalculation
       this.updateAll();
     },
 
     recolor() {
       if (!this.image) return;
+      cachedRawPalette = null; // P0-3: force re-extraction
+      paletteImageSrc = null;
       this.updateAll();
     },
 
@@ -267,21 +289,34 @@ export function createStore(): AppStore {
       this.updateAll();
     },
 
+    // P0-1: Debounced version for slider inputs — merges rapid changes into one frame
+    scheduleUpdate() {
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        this.updateAll();
+      });
+    },
+
     updateAll() {
       this.syncReadouts();
       this.syncPreview();
       if (!this.image) return;
 
-      if (!previewCtx) initCanvas();
-      if (!previewCtx || !exportCtx || !previewCanvas || !exportCanvas) return;
+      ensureFontLoaded(this.fontFamily);
 
-      const paletteResult = updatePalette(
-        this.image,
-        this.theme,
-        this.toneMode,
-        this.softness,
-        this.sceneType,
-      );
+      if (!previewCtx) initCanvas();
+      if (!previewCtx || !previewCanvas) return;
+
+      // P0-3: Use cached palette when only style params changed
+      let rawPal = cachedRawPalette;
+      if (!rawPal || paletteImageSrc !== this.image.src) {
+        rawPal = extractPalette(this.image);
+        paletteImageSrc = this.image.src;
+        cachedRawPalette = rawPal;
+      }
+
+      const paletteResult = rebuildPalette(rawPal, this.theme, this.toneMode, this.softness);
       this.sceneType = paletteResult.sceneType;
       this.palette = paletteResult.palette;
 
@@ -292,12 +327,12 @@ export function createStore(): AppStore {
 
       const options = getRenderOptions(this);
 
-      const exportResult = renderToCanvas(exportCtx, exportCanvas, this.image, options, null);
-      renderToCanvas(previewCtx, previewCanvas, this.image, options, 1080);
+      // P0-2: Only render preview canvas during editing; export canvas rendered on demand
+      const previewResult = renderToCanvas(previewCtx, previewCanvas, this.image, options, 1080);
 
-      if (exportResult) {
-        this.exportSize = `${exportResult.exportW} × ${exportResult.exportH}`;
-        this.previewMeta = `${exportResult.exportW} × ${exportResult.exportH}导出｜内容区${exportResult.contentW} × ${exportResult.contentH}｜原图${exportResult.photoW} × ${exportResult.photoH}｜${(themeLabels as Record<string, string>)[this.theme as string]}｜${this.sceneType}`;
+      if (previewResult) {
+        this.exportSize = `${previewResult.exportW} × ${previewResult.exportH}`;
+        this.previewMeta = `${previewResult.exportW} × ${previewResult.exportH}导出｜内容区${previewResult.contentW} × ${previewResult.contentH}｜原图${previewResult.photoW} × ${previewResult.photoH}｜${(themeLabels as Record<string, string>)[this.theme as string]}｜${this.sceneType}`;
         this.exportReady = true;
       }
 
@@ -323,7 +358,12 @@ export function createStore(): AppStore {
     },
 
     handleExport() {
-      if (!this.image || !exportCanvas) return;
+      if (!this.image || !exportCanvas || !exportCtx) return;
+
+      // P0-2: Render export canvas on demand only when user clicks export
+      const options = getRenderOptions(this);
+      const exportResult = renderToCanvas(exportCtx, exportCanvas, this.image, options, null);
+      if (!exportResult) return;
 
       exportCanvas.toBlob((blob) => {
         if (!blob) return;
@@ -370,6 +410,7 @@ export function createStore(): AppStore {
       this.showLocation = s.showLocation;
       this.showTime = s.showTime;
       this.activeTemplateId = tplId;
+      cachedRawPalette = null; // P0-3: theme/tone/softness changed
       this.updateAll();
     },
 
