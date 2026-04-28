@@ -98,7 +98,9 @@ html.theme-switching body::after {
   padding: 10px 10px 8px;
   background: linear-gradient(180deg, var(--sidebar-gradient-start) 0%, var(--sidebar-gradient-end) 100%);
   border-right: 1px solid var(--line);
-  overflow-y: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
   display: flex;
   flex-direction: column;
   gap: 7px;
