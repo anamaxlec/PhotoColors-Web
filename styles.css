@@ -785,3 +785,323 @@ input[type="range"]::-moz-range-thumb {
     justify-content: flex-end;
   }
 }
+
+/* ========================================
+   Border Presets
+   ======================================== */
+
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+  margin-bottom: 8px;
+}
+
+.preset-btn {
+  height: 28px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.preset-btn:hover {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.preset-btn.is-active {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+[data-ui-theme="dark"] .preset-btn {
+  background: var(--panel);
+}
+
+/* ========================================
+   Text button & small buttons
+   ======================================== */
+
+.text-btn {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.18s ease;
+}
+
+.text-btn:hover {
+  background: var(--primary-soft);
+}
+
+.btn-sm {
+  height: 28px;
+  font-size: 11px;
+  padding: 0 12px;
+  border-radius: 8px;
+}
+
+.btn-xs {
+  height: 26px;
+  font-size: 10px;
+  padding: 0 10px;
+  border-radius: 7px;
+}
+
+.btn-full {
+  width: 100%;
+  justify-content: center;
+}
+
+.batch-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  cursor: pointer;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* ========================================
+   Batch Processing
+   ======================================== */
+
+.batch-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.batch-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.batch-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.batch-list::-webkit-scrollbar-thumb {
+  background: rgba(108, 130, 158, 0.28);
+  border-radius: 999px;
+}
+
+.batch-item {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  font-size: 11px;
+}
+
+.batch-item.done {
+  background: color-mix(in srgb, #43b768 8%, transparent);
+}
+
+.batch-item.error {
+  background: color-mix(in srgb, #eb5b56 8%, transparent);
+}
+
+.batch-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.batch-status {
+  font-size: 10px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.batch-item.done .batch-status {
+  color: #43b768;
+}
+
+.batch-item.error .batch-status {
+  color: #eb5b56;
+}
+
+.batch-progress {
+  width: 100%;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.batch-progress-bar {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 999px;
+  transition: width 0.2s ease;
+}
+
+/* ========================================
+   Templates
+   ======================================== */
+
+.template-save {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.template-save-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.field-input {
+  width: 100%;
+  height: 32px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--surface-2);
+  padding: 0 10px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  outline: none;
+  font-family: var(--ui-control-font);
+}
+
+.field-input:focus {
+  border-color: var(--primary);
+}
+
+.template-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.template-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.template-list::-webkit-scrollbar-thumb {
+  background: rgba(108, 130, 158, 0.28);
+  border-radius: 999px;
+}
+
+.template-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  transition: border-color 0.18s ease;
+}
+
+.template-item:hover {
+  border-color: var(--line-strong);
+}
+
+.template-item.is-active {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.template-item-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.template-item-info strong {
+  display: block;
+  font-size: 12px;
+  line-height: 1.2;
+  margin-bottom: 1px;
+}
+
+.template-item-info span {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.template-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.icon-btn-sm {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.icon-btn-sm:hover {
+  background: rgba(40, 119, 199, 0.10);
+  color: var(--text);
+}
+
+.template-empty {
+  padding: 8px;
+  text-align: center;
+}
+
+.muted-text {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* ========================================
+   Dark mode additions
+   ======================================== */
+
+[data-ui-theme="dark"] .field-input {
+  background: var(--panel);
+  color: var(--text);
+}
+
+[data-ui-theme="dark"] .batch-item {
+  background: var(--panel);
+}
+
+[data-ui-theme="dark"] .template-item {
+  background: var(--panel);
+}
