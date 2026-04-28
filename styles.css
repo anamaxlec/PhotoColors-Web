@@ -657,7 +657,7 @@ input[type="range"]::-moz-range-thumb {
   position: relative;
   flex: 1;
   min-height: 0;
-  border-radius: 20px;
+  border-radius: 0;
   background: var(--preview-stage-bg);
   padding: 10px;
   display: flex;
@@ -672,13 +672,13 @@ input[type="range"]::-moz-range-thumb {
   max-height: calc(100dvh - 56px);
   width: auto;
   height: auto;
-  border-radius: 14px;
+  border-radius: 0;
 }
 
 .placeholder {
   position: absolute;
   inset: 10px;
-  border-radius: 18px;
+  border-radius: 0;
   color: #7f8ea2;
   display: flex;
   flex-direction: column;
