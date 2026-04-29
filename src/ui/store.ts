@@ -66,9 +66,17 @@ function getRenderOptions(s: AppStore): RenderOptions {
     blackBorderPx: s.blackBorder,
     showLocation: s.showLocation,
     showTime: s.showTime,
+    showColorBg: s.showColorBg,
     location: s.location,
     time: s.time,
   };
+}
+
+// Toast helper — calls the global showToast set up in main.ts
+function toast(msg: string, type: 'success' | 'error' | 'info' = 'info') {
+  const win = window as unknown as Record<string, unknown>;
+  const fn = win.showToast as ((m: string, t: string) => void) | undefined;
+  if (fn) fn(msg, type);
 }
 
 export interface AppStore {
@@ -92,6 +100,7 @@ export interface AppStore {
   time: string;
   showLocation: boolean;
   showTime: boolean;
+  showColorBg: boolean;
   fontFamily: string;
   locationSize: number;
   timeSize: number;
@@ -134,7 +143,7 @@ export interface AppStore {
   // --- Core methods ---
   toggleTheme(): void;
   loadImageFromFile(file: File): void;
-  handleExport(): void;
+  handleExport(format?: string, targetW?: number, targetH?: number): void;
   setTheme(themeName: ThemeName): void;
   updateAll(): void;
   scheduleUpdate(): void;
@@ -155,6 +164,7 @@ export interface AppStore {
   addBatchFiles(files: FileList): void;
   startBatchProcess(): void;
   exportBatchZip(): void;
+  retryBatchTask(taskId: string): void;
   clearBatch(): void;
 }
 
@@ -192,6 +202,7 @@ export function createStore(): AppStore {
     time: '18:00',
     showLocation: true,
     showTime: true,
+    showColorBg: true,
     fontFamily: 'apple',
     locationSize: 1.0,
     timeSize: 1.0,
@@ -200,9 +211,9 @@ export function createStore(): AppStore {
     toneMode: 'elegant' as ToneMode,
     edgeMode: 'soft' as EdgeMode,
     softness: 60,
-    whiteBorder: 8,
-    blackBorder: 2,
-    borderPreset: 'classic',
+    whiteBorder: 0,
+    blackBorder: 0,
+    borderPreset: 'none',
     borderPresets: BORDER_PRESETS,
     exportSize: '未加载图片',
     exportReady: false,
@@ -217,8 +228,8 @@ export function createStore(): AppStore {
     gapValue: '1.00×',
     textYValue: '50%',
     softnessValue: '60',
-    whiteBorderValue: '8%',
-    blackBorderValue: '2px',
+    whiteBorderValue: '0%',
+    blackBorderValue: '0px',
     templates: loadTemplates(),
     activeTemplateId: null,
     showTemplatePanel: false,
@@ -252,9 +263,15 @@ export function createStore(): AppStore {
           this.updateAll();
         });
         this.updateAll();
+        // Hide skeleton
+        const hideSkel = (window as unknown as Record<string, unknown>).showSkeleton as ((s: boolean) => void) | undefined;
+        if (hideSkel) hideSkel(false);
       };
       img.onerror = () => {
         this.imageError = '图片加载失败，请检查文件格式';
+        toast('图片加载失败，请检查文件格式', 'error');
+        const hideSkel = (window as unknown as Record<string, unknown>).showSkeleton as ((s: boolean) => void) | undefined;
+        if (hideSkel) hideSkel(false);
         URL.revokeObjectURL(url);
       };
       img.src = url;
@@ -357,25 +374,32 @@ export function createStore(): AppStore {
       this.liveTextPreview = parts.join(' / ') || '未显示文字';
     },
 
-    handleExport() {
+    handleExport(format?: string, targetW?: number, targetH?: number) {
       if (!this.image || !exportCanvas || !exportCtx) return;
 
       // P0-2: Render export canvas on demand only when user clicks export
       const options = getRenderOptions(this);
+      if (targetW && targetH) {
+        options.targetWidth = targetW;
+        options.targetHeight = targetH;
+      }
       const exportResult = renderToCanvas(exportCtx, exportCanvas, this.image, options, null);
       if (!exportResult) return;
 
+      const mimeType = format || 'image/png';
+      const ext = mimeType === 'image/webp' ? 'webp' : 'png';
       exportCanvas.toBlob((blob) => {
         if (!blob) return;
         const url = URL.createObjectURL(blob);
         const anchor = document.createElement('a');
         anchor.href = url;
-        anchor.download = `${this.imageName}-photocolors.png`;
+        anchor.download = this.imageName + '-photocolors.' + ext;
         document.body.appendChild(anchor);
         anchor.click();
         anchor.remove();
         URL.revokeObjectURL(url);
-      }, 'image/png');
+        toast('已导出 ' + exportResult.exportW + '×' + exportResult.exportH, 'success');
+      }, mimeType);
     },
 
     // Template methods
@@ -385,10 +409,12 @@ export function createStore(): AppStore {
         this.fontFamily, this.locationSize, this.timeSize,
         this.lineGap, this.textY, this.whiteBorder, this.blackBorder,
         this.borderPreset, this.showLocation, this.showTime,
+        this.showColorBg,
       );
       const tpl = createTemplate(name, settings);
       this.templates = addTemplate(this.templates, tpl);
       this.showTemplatePanel = false;
+      toast('模板已保存: ' + name, 'success');
     },
 
     applyTemplate(tplId: string) {
@@ -409,28 +435,34 @@ export function createStore(): AppStore {
       this.borderPreset = s.borderPreset;
       this.showLocation = s.showLocation;
       this.showTime = s.showTime;
+      this.showColorBg = s.showColorBg !== false;
       this.activeTemplateId = tplId;
       cachedRawPalette = null; // P0-3: theme/tone/softness changed
       this.updateAll();
+      toast('已应用模板: ' + tpl.name, 'info');
     },
 
     removeTemplate(tplId: string) {
+      const removed = this.templates.find((t: Template) => t.id === tplId);
       this.templates = deleteTemplate(this.templates, tplId);
       if (this.activeTemplateId === tplId) this.activeTemplateId = null;
+      if (removed) toast('模板已删除: ' + removed.name, 'info');
     },
 
     exportTemplateById(tplId: string) {
       const tpl = this.templates.find((t: Template) => t.id === tplId);
       if (!tpl) return;
       exportTemplate(tpl);
+      toast('模板已导出: ' + tpl.name, 'success');
     },
 
     async importTemplateFromFile(file: File) {
       try {
         const tpl = await importTemplate(file);
         this.templates = addTemplate(this.templates, tpl);
+        toast('模板已导入: ' + tpl.name, 'success');
       } catch (e) {
-        alert('导入失败：无效的模板文件');
+        toast('导入失败：无效的模板文件', 'error');
       }
     },
 
@@ -439,19 +471,28 @@ export function createStore(): AppStore {
       const tasks: BatchTask[] = [];
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        if (!file.type.startsWith('image/')) continue;
+        if (!file.type.startsWith('image/')) {
+          toast('不支持的文件格式: ' + file.name, 'error');
+          continue;
+        }
+        // Generate a thumbnail URL from the file
+        const thumbUrl = URL.createObjectURL(file);
         tasks.push({
-          id: `batch-${Date.now()}-${i}`,
+          id: 'batch-' + Date.now() + '-' + i,
           file,
           status: 'pending' as const,
           progress: 0,
-          thumbnail: '',
+          thumbnail: thumbUrl,
           filename: file.name,
         });
       }
+      if (tasks.length === 0) return;
       this.batchTasks = [...this.batchTasks, ...tasks];
       this.batchMode = true;
       this.syncBatchCounts();
+      if (tasks.length > 0) {
+        toast('已添加 ' + tasks.length + ' 张照片到批量队列', 'info');
+      }
     },
 
     startBatchProcess() {
@@ -495,6 +536,8 @@ export function createStore(): AppStore {
               }
             }
             exportAsZip(blobs);
+            const doneCount = this.batchTasks.filter((t: BatchTask) => t.status === 'done').length;
+            toast(`批量完成: ${doneCount}/${this.batchTasks.length} 张`, 'success');
           }
         },
         (taskId) => {
@@ -518,6 +561,10 @@ export function createStore(): AppStore {
               }
             }
             exportAsZip(blobs);
+            const doneCount = this.batchTasks.filter((t: BatchTask) => t.status === 'done').length;
+            toast(`批量完成: ${doneCount}/${this.batchTasks.length} 张 (含失败)`, 'info');
+          } else {
+            toast(`处理失败: ${task?.filename || '未知'}`, 'error');
           }
         },
       );
@@ -527,7 +574,22 @@ export function createStore(): AppStore {
       alert('批量任务完成后会自动导出 ZIP 文件');
     },
 
+    retryBatchTask(taskId: string) {
+      const task = this.batchTasks.find((t: BatchTask) => t.id === taskId);
+      if (task && task.status === 'error') {
+        task.status = 'pending';
+        task.progress = 0;
+        this.syncBatchCounts();
+        // Re-trigger batch processing
+        this.startBatchProcess();
+      }
+    },
+
     clearBatch() {
+      // Revoke thumbnail URLs
+      for (const task of this.batchTasks) {
+        if (task.thumbnail) URL.revokeObjectURL(task.thumbnail);
+      }
       this.batchTasks = [];
       this.batchMode = false;
       this.batchDoneCount = 0;

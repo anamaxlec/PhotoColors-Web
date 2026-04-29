@@ -11,6 +11,7 @@
 </head>
 <body>
   <div id="app">
+    <div class="toast-container" id="toastContainer"></div>
     <main class="app">
       <aside class="sidebar">
         <div class="sidebar-head">
@@ -23,7 +24,7 @@
             <div class="brand">PhotoColors</div>
           </div>
 
-          <button class="icon-btn" id="themeToggle" type="button" aria-label="切换界面主题" title="切换亮色/深色界面">
+          <button class="icon-btn" id="themeToggle" type="button" aria-label="切换界面主题" title="切换亮色/深色界面" :aria-pressed="uiTheme === 'dark'">
             <svg class="icon-sun" viewBox="0 0 20 20" fill="none">
               <circle cx="10" cy="10" r="3.5" stroke="currentColor" stroke-width="1.6"/>
               <path d="M10 2v2M10 16v2M3.5 5.5l1.4 1.4M15.1 14.1l1.4 1.4M2 10h2M16 10h2M3.5 14.5l1.4-1.4M15.1 5.9l1.4-1.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
@@ -194,14 +195,14 @@
 
           <div class="chip-grid">
             <div class="color-chip-card">
-              <div class="color-chip" :style="{ background: bgCss }"></div>
+              <div class="color-chip" :style="{ background: bgCss }" :aria-label="'背景色 ' + bgHex" role="img"></div>
               <div class="chip-copy">
                 <span>背景色</span>
                 <strong>{{ bgHex }}</strong>
               </div>
             </div>
             <div class="color-chip-card">
-              <div class="color-chip" :style="{ background: textCss }"></div>
+              <div class="color-chip" :style="{ background: textCss }" :aria-label="'文字色 ' + textHex" role="img"></div>
               <div class="chip-copy">
                 <span>文字色</span>
                 <strong>{{ textHex }}</strong>
@@ -212,8 +213,13 @@
 
         <!-- 边框 -->
         <section class="panel-card">
-          <div class="panel-head">
+          <div class="panel-head panel-head-inline">
             <div class="panel-title">边框</div>
+            <label class="mini-switch">
+              <input type="checkbox" v-model="showColorBg" @change="updateAll()" />
+              <span class="mini-track"></span>
+              <span>取色拼图</span>
+            </label>
           </div>
 
           <div class="preset-grid">
@@ -221,7 +227,11 @@
               v-for="p in borderPresets" :key="p.id"
               class="preset-btn" :class="{ 'is-active': borderPreset === p.id }"
               @click="applyBorderPreset(p.id)" type="button"
-            >{{ p.label }}</button>
+              :aria-pressed="borderPreset === p.id"
+            >
+              <span :class="'preset-thumb th-' + p.id" aria-hidden="true"></span>
+              {{ p.label }}
+            </button>
           </div>
 
           <label class="slider-row">
@@ -237,7 +247,7 @@
               <span>黑线宽度</span>
               <span>{{ blackBorderValue }}</span>
             </div>
-            <input type="range" min="0" max="12" step="0.5" v-model.number="blackBorder" @input="scheduleUpdate()" />
+            <input type="range" min="0" max="30" step="0.5" v-model.number="blackBorder" @input="scheduleUpdate()" />
           </label>
         </section>
 
@@ -261,11 +271,16 @@
               class="batch-item"
               :class="task.status"
             >
-              <span class="batch-name">{{ task.filename }}</span>
-              <span class="batch-status">{{ task.status === 'pending' ? '等待中' : task.status === 'processing' ? task.progress + '%' : task.status === 'done' ? '完成' : '失败' }}</span>
-              <div class="batch-progress" v-if="task.status === 'processing'">
-                <div class="batch-progress-bar" :style="{ width: task.progress + '%' }"></div>
+              <img class="batch-thumb" :src="task.thumbnail" v-if="task.thumbnail" alt="" />
+              <div class="batch-thumb-placeholder" v-if="!task.thumbnail"></div>
+              <div class="batch-info">
+                <span class="batch-name">{{ task.filename }}</span>
+                <span class="batch-status">{{ task.status === 'pending' ? '等待中' : task.status === 'processing' ? task.progress + '%' : task.status === 'done' ? '完成' : '失败' }}</span>
+                <div class="batch-progress" v-if="task.status === 'processing'">
+                  <div class="batch-progress-bar" :style="{ width: task.progress + '%' }"></div>
+                </div>
               </div>
+              <button class="batch-retry-btn" v-if="task.status === 'error'" @click="retryBatchTask(task.id)" title="重试">重试</button>
             </div>
           </div>
         </section>
@@ -317,7 +332,22 @@
 
           <div class="action-row">
             <button class="btn btn-tonal" type="button" @click="recolor">重新取色</button>
-            <button class="btn btn-filled" type="button" @click="handleExport" :disabled="!exportReady">导出PNG</button>
+            <div class="export-btns">
+              <button class="btn btn-filled" type="button" @click="handleExport()" :disabled="!exportReady">导出PNG</button>
+              <button class="btn btn-tonal btn-sm" type="button" @click="handleExport('image/webp')" :disabled="!exportReady" title="WebP体积更小">WebP</button>
+            </div>
+          </div>
+
+          <div class="export-size-presets" v-if="exportReady">
+            <div class="field-label">导出尺寸预设</div>
+            <div class="preset-grid size-presets">
+              <button class="preset-btn" type="button" @click="handleExport()" title="原始分辨率">原始</button>
+              <button class="preset-btn" type="button" @click="handleExport(undefined, 1080, 1440)" title="1080×1440 小红书">小红书</button>
+              <button class="preset-btn" type="button" @click="handleExport(undefined, 1080, 1080)" title="1080×1080 Instagram">1:1</button>
+              <button class="preset-btn" type="button" @click="handleExport(undefined, 1080, 1920)" title="1080×1920 Story">Story</button>
+              <button class="preset-btn" type="button" @click="handleExport(undefined, 1080, 1260)" title="1080×1260 朋友圈">朋友圈</button>
+              <button class="preset-btn" type="button" @click="handleExport()" title="自定义宽高">自定义</button>
+            </div>
           </div>
 
           <div class="size-readout">{{ exportSize }}</div>
@@ -328,7 +358,10 @@
         </div>
 
         <input id="imageUpload" type="file" accept="image/*" hidden />
-        <div v-if="imageError" class="image-error">{{ imageError }}</div>
+        <div v-if="imageError" class="image-error">
+          <span>{{ imageError }}</span>
+          <button class="text-btn" @click="imageError = ''">关闭</button>
+        </div>
         <input id="batchUpload" type="file" accept="image/*" multiple hidden />
         <input id="templateImport" type="file" accept=".json" hidden />
       </aside>
@@ -343,6 +376,7 @@
         </div>
 
         <div class="preview-stage" id="dropZone">
+          <div class="skeleton skeleton-canvas" id="canvasSkeleton" style="display:none"></div>
           <canvas id="previewCanvas" role="img" aria-label="照片色彩编辑器实时预览"></canvas>
           <div class="placeholder" id="placeholder">
             <div class="placeholder-icon" aria-hidden="true">
@@ -352,7 +386,14 @@
                 <path d="M5.5 16l4.2-4 3.1 3 2.6-2.3 3.1 3.3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </div>
-            <div class="placeholder-text">上传照片后即可预览</div>
+            <div class="placeholder-text">拖拽照片到此处或点击左侧上传</div>
+            <button class="demo-btn" type="button" id="demoBtn">
+              <svg viewBox="0 0 18 18" fill="none"><path d="M9 3v12M4 9h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              试试示例照片
+            </button>
+          </div>
+          <div class="drop-hint" id="dropHint">
+            <div class="drop-hint-text">松手以上传照片</div>
           </div>
         </div>
       </section>

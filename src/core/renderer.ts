@@ -73,6 +73,9 @@ export interface RenderOptions {
   showTime: boolean;
   location: string;
   time: string;
+  targetWidth?: number;
+  targetHeight?: number;
+  showColorBg?: boolean;
 }
 
 export interface RenderResult {
@@ -102,8 +105,9 @@ export function renderToCanvas(
   // Support both HTMLImageElement (naturalWidth) and ImageBitmap (width)
   const photoW = (image as HTMLImageElement).naturalWidth || (image as HTMLImageElement).width;
   const photoH = (image as HTMLImageElement).naturalHeight || (image as HTMLImageElement).height;
+  const showColorBg = options.showColorBg !== false;
   const contentW = photoW;
-  const contentH = photoH * 2;
+  const contentH = showColorBg ? photoH * 2 : photoH;
 
   let scale = 1;
   if (maxPreviewWidth) {
@@ -113,10 +117,26 @@ export function renderToCanvas(
   const frame = getFrameSettings(options.whiteBorderPercent, options.blackBorderPx, scale, contentW, contentH);
   const targetContentW = Math.max(1, Math.round(contentW * scale));
   const targetContentH = Math.max(1, Math.round(contentH * scale));
-  const targetW = targetContentW + frame.whiteBorder * 2;
-  const targetH = targetContentH + frame.whiteBorder * 2;
-  const contentX = frame.whiteBorder;
-  const contentY = frame.whiteBorder;
+  let targetW = targetContentW + frame.whiteBorder * 2;
+  let targetH = targetContentH + frame.whiteBorder * 2;
+  let contentX = frame.whiteBorder;
+  let contentY = frame.whiteBorder;
+
+  // Target size preset: fit content into target frame with white padding
+  if (options.targetWidth && options.targetHeight) {
+    const fitScale = Math.min(
+      options.targetWidth / targetW,
+      options.targetHeight / targetH,
+      1.0,
+    );
+    const fittedW = Math.round(targetW * fitScale);
+    const fittedH = Math.round(targetH * fitScale);
+    contentX = Math.round((options.targetWidth - fittedW) / 2);
+    contentY = Math.round((options.targetHeight - fittedH) / 2);
+    targetW = options.targetWidth;
+    targetH = options.targetHeight;
+    scale *= fitScale;
+  }
 
   canvas.width = targetW;
   canvas.height = targetH;
@@ -134,9 +154,13 @@ export function renderToCanvas(
   const drawW = Math.round(photoW * scale);
   const drawH = Math.round(photoH * scale);
 
-  ctx.fillStyle = rgbToCss(bg);
-  ctx.fillRect(contentX, contentY, targetContentW, topH);
-  ctx.drawImage(image, contentX, bottomY, drawW, drawH);
+  if (showColorBg) {
+    ctx.fillStyle = rgbToCss(bg);
+    ctx.fillRect(contentX, contentY, targetContentW, topH);
+    ctx.drawImage(image, contentX, bottomY, drawW, drawH);
+  } else {
+    ctx.drawImage(image, contentX, contentY, drawW, drawH);
+  }
 
   const fontPreset = getFontPreset(options.fontFamily);
   const baseLocationSize = clamp(contentW * 0.052, 32, 160) * options.locationSize * scale;
@@ -161,7 +185,10 @@ export function renderToCanvas(
 
   if (blocks.length > 0) {
     const totalHeight = blocks.reduce((sum, item) => sum + item.size, 0) + (blocks.length - 1) * lineGap;
-    const centerY = contentY + topH * (options.textY / 100);
+    const textAreaH = showColorBg ? topH : Math.round(photoH * scale);
+    const centerY = showColorBg
+      ? contentY + topH * (options.textY / 100)
+      : contentY + textAreaH * (options.textY / 100);
     let currentY = centerY - totalHeight / 2;
     const edge = getEdgeStyle(text, bg, options.edgeMode);
 

@@ -86,6 +86,7 @@ export interface TemplateSettings {
   borderPreset: string;
   showLocation: boolean;
   showTime: boolean;
+  showColorBg: boolean;
 }
 
 export interface BatchTask {

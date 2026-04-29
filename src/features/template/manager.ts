@@ -85,6 +85,7 @@ export function extractCurrentSettings(
   borderPreset: string,
   showLocation: boolean,
   showTime: boolean,
+  showColorBg: boolean,
 ): TemplateSettings {
   return {
     theme: themeName,
@@ -101,5 +102,6 @@ export function extractCurrentSettings(
     borderPreset,
     showLocation,
     showTime,
+    showColorBg,
   };
 }
