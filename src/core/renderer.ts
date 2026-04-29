@@ -149,6 +149,25 @@ export function renderToCanvas(
   ctx.fillStyle = 'rgb(255, 255, 255)';
   ctx.fillRect(0, 0, targetW, targetH);
 
+  // Black border: drawn BEFORE content with 1px overlap to prevent anti-alias gap
+  if (frame.blackBorder > 0) {
+    ctx.fillStyle = 'rgb(0, 0, 0)';
+    const bb = frame.blackBorder;
+    const bx = contentX - bb;
+    const by = contentY - bb;
+    const bw = targetContentW + bb * 2;
+    const bh = targetContentH + bb * 2;
+    const ol = 1; // 1px overlap into content area
+    // Top bar
+    ctx.fillRect(bx, by, bw, bb + ol);
+    // Bottom bar
+    ctx.fillRect(bx, by + bh - bb - ol, bw, bb + ol);
+    // Left bar (between top and bottom overlaps)
+    ctx.fillRect(bx, by + bb, bb + ol, bh - bb * 2);
+    // Right bar
+    ctx.fillRect(bx + bw - bb - ol, by + bb, bb + ol, bh - bb * 2);
+  }
+
   const { bg, text } = options;
   const topH = Math.round(photoH * scale);
   const bottomY = contentY + topH;
@@ -200,23 +219,7 @@ export function renderToCanvas(
     }
   }
 
-  // Black border: drawn as a filled frame OUTSIDE the content area
-  if (frame.blackBorder > 0) {
-    ctx.fillStyle = 'rgb(0, 0, 0)';
-    const bb = frame.blackBorder;
-    const bx = contentX - bb;
-    const by = contentY - bb;
-    const bw = targetContentW + bb * 2;
-    const bh = targetContentH + bb * 2;
-    // Top bar
-    ctx.fillRect(bx, by, bw, bb);
-    // Bottom bar
-    ctx.fillRect(bx, by + bh - bb, bw, bb);
-    // Left bar
-    ctx.fillRect(bx, by + bb, bb, bh - bb * 2);
-    // Right bar
-    ctx.fillRect(bx + bw - bb, by + bb, bb, bh - bb * 2);
-  }
+
 
   return {
     exportW: targetW,
