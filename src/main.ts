@@ -6,6 +6,16 @@ const store = createStore();
 // Mount Petite-Vue on the sidebar
 const app = createApp(store);
 app.mount('#app');
+
+// Close export dropdown when clicking outside
+document.addEventListener('click', (e) => {
+  if (store.showExportMenu) {
+    const target = e.target as HTMLElement;
+    if (!target.closest('.dropdown')) {
+      store.showExportMenu = false;
+    }
+  }
+});
 (window as unknown as Record<string, unknown>).store = store;
 
 // ── Toast notification system ──

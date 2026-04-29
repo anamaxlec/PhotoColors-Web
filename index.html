@@ -222,17 +222,15 @@
             </label>
           </div>
 
-          <div class="preset-grid">
-            <button
-              v-for="p in borderPresets" :key="p.id"
-              class="preset-btn" :class="{ 'is-active': borderPreset === p.id }"
-              @click="applyBorderPreset(p.id)" type="button"
-              :aria-pressed="borderPreset === p.id"
-            >
-              <span :class="'preset-thumb th-' + p.id" aria-hidden="true"></span>
-              {{ p.label }}
-            </button>
-          </div>
+          <label class="field field-select">
+            <span class="field-label">预设样式</span>
+            <span class="select-wrap">
+              <select v-model="borderPreset" @change="applyBorderPreset(borderPreset)">
+                <option v-for="p in borderPresets" :key="p.id" :value="p.id">{{ p.label }}</option>
+              </select>
+              <svg class="select-arrow" viewBox="0 0 12 8" fill="none" aria-hidden="true"><path d="M1 1.5l5 5 5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+          </label>
 
           <label class="slider-row">
             <div class="slider-header">
@@ -322,36 +320,6 @@
         </section>
 
         <div class="side-meta">
-          <div class="text-preview-card">
-            <div class="meta-dot" aria-hidden="true"></div>
-            <div class="text-preview-copy">
-              <span>当前文字预览</span>
-              <strong>{{ liveTextPreview }}</strong>
-            </div>
-          </div>
-
-          <div class="action-row">
-            <button class="btn btn-tonal" type="button" @click="recolor">重新取色</button>
-            <div class="export-btns">
-              <button class="btn btn-filled" type="button" @click="handleExport()" :disabled="!exportReady">导出PNG</button>
-              <button class="btn btn-tonal btn-sm" type="button" @click="handleExport('image/webp')" :disabled="!exportReady" title="WebP体积更小">WebP</button>
-            </div>
-          </div>
-
-          <div class="export-size-presets" v-if="exportReady">
-            <div class="field-label">导出尺寸预设</div>
-            <div class="preset-grid size-presets">
-              <button class="preset-btn" type="button" @click="handleExport()" title="原始分辨率">原始</button>
-              <button class="preset-btn" type="button" @click="handleExport(undefined, 1080, 1440)" title="1080×1440 小红书">小红书</button>
-              <button class="preset-btn" type="button" @click="handleExport(undefined, 1080, 1080)" title="1080×1080 Instagram">1:1</button>
-              <button class="preset-btn" type="button" @click="handleExport(undefined, 1080, 1920)" title="1080×1920 Story">Story</button>
-              <button class="preset-btn" type="button" @click="handleExport(undefined, 1080, 1260)" title="1080×1260 朋友圈">朋友圈</button>
-              <button class="preset-btn" type="button" @click="handleExport()" title="自定义宽高">自定义</button>
-            </div>
-          </div>
-
-          <div class="size-readout">{{ exportSize }}</div>
-
           <label class="batch-toggle btn btn-tonal btn-full" for="batchUpload" v-if="!batchMode">
             批量导入照片
           </label>
@@ -368,11 +336,31 @@
 
       <section class="preview-panel">
         <div class="preview-head">
-          <div class="preview-title-wrap">
+          <div class="preview-head-left">
             <div class="meta-dot" aria-hidden="true"></div>
             <span class="preview-title">实时预览</span>
+            <span class="preview-text-inline" v-if="exportReady">{{ liveTextPreview }}</span>
           </div>
-          <span class="preview-meta">{{ previewMeta }}</span>
+          <div class="preview-head-right">
+            <span class="size-readout">{{ exportSize }}</span>
+            <button class="btn btn-tonal btn-sm" type="button" @click="recolor" :disabled="!exportReady">重新取色</button>
+            <div class="dropdown" :class="{ 'is-open': showExportMenu }">
+              <button class="btn btn-filled btn-sm" type="button" @click="showExportMenu = !showExportMenu" :disabled="!exportReady">
+                导出 ▾
+              </button>
+              <div class="dropdown-menu" v-if="showExportMenu" @click.stop>
+                <button class="dropdown-item" @click="handleExport(); showExportMenu = false">导出 PNG</button>
+                <button class="dropdown-item" @click="handleExport('image/webp'); showExportMenu = false">导出 WebP</button>
+                <div class="dropdown-divider"></div>
+                <div class="dropdown-label">尺寸预设</div>
+                <button class="dropdown-item" @click="handleExport(); showExportMenu = false">原始比例</button>
+                <button class="dropdown-item" @click="handleExport(undefined, 1080, 1440); showExportMenu = false">小红书 1080×1440</button>
+                <button class="dropdown-item" @click="handleExport(undefined, 1080, 1080); showExportMenu = false">Instagram 1:1</button>
+                <button class="dropdown-item" @click="handleExport(undefined, 1080, 1920); showExportMenu = false">Story 1080×1920</button>
+                <button class="dropdown-item" @click="handleExport(undefined, 1080, 1260); showExportMenu = false">朋友圈 1080×1260</button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="preview-stage" id="dropZone">

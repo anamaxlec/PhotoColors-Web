@@ -133,6 +133,7 @@ export interface AppStore {
   // --- Templates ---
   templates: Template[];
   activeTemplateId: string | null;
+  showExportMenu: boolean;
   showTemplatePanel: boolean;
   newTemplateName: string;
   // --- Batch ---
@@ -233,6 +234,7 @@ export function createStore(): AppStore {
     blackBorderValue: '0px',
     templates: loadTemplates(),
     activeTemplateId: null,
+    showExportMenu: false,
     showTemplatePanel: false,
     newTemplateName: '',
     batchTasks: [],
