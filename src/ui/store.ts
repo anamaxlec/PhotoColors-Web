@@ -149,6 +149,7 @@ export interface AppStore {
   scheduleUpdate(): void;
   recolor(): void;
   applyBorderPreset(id: string): void;
+  onColorBgToggle(): void;
   syncReadouts(): void;
   syncPreview(): void;
   syncBatchCounts(): void;
@@ -303,6 +304,15 @@ export function createStore(): AppStore {
       const preset = getBorderPreset(id);
       this.whiteBorder = preset.whiteBorderPercent;
       this.blackBorder = preset.blackBorderPx;
+      this.updateAll();
+    },
+
+    onColorBgToggle() {
+      if (!this.showColorBg) {
+        // Turning off color background: auto-hide text (user can re-enable)
+        this.showLocation = false;
+        this.showTime = false;
+      }
       this.updateAll();
     },
 

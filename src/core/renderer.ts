@@ -117,10 +117,11 @@ export function renderToCanvas(
   const frame = getFrameSettings(options.whiteBorderPercent, options.blackBorderPx, scale, contentW, contentH);
   const targetContentW = Math.max(1, Math.round(contentW * scale));
   const targetContentH = Math.max(1, Math.round(contentH * scale));
-  let targetW = targetContentW + frame.whiteBorder * 2;
-  let targetH = targetContentH + frame.whiteBorder * 2;
-  let contentX = frame.whiteBorder;
-  let contentY = frame.whiteBorder;
+  // Black border sits outside content, fully in the white margin zone
+  let targetW = targetContentW + frame.whiteBorder * 2 + frame.blackBorder * 2;
+  let targetH = targetContentH + frame.whiteBorder * 2 + frame.blackBorder * 2;
+  let contentX = frame.whiteBorder + frame.blackBorder;
+  let contentY = frame.whiteBorder + frame.blackBorder;
 
   // Target size preset: fit content into target frame with white padding
   if (options.targetWidth && options.targetHeight) {
@@ -199,18 +200,22 @@ export function renderToCanvas(
     }
   }
 
+  // Black border: drawn as a filled frame OUTSIDE the content area
   if (frame.blackBorder > 0) {
-    ctx.save();
-    ctx.strokeStyle = 'rgb(0, 0, 0)';
-    ctx.lineWidth = frame.blackBorder;
-    const inset = frame.blackBorder / 2;
-    ctx.strokeRect(
-      contentX + inset,
-      contentY + inset,
-      targetContentW - frame.blackBorder,
-      targetContentH - frame.blackBorder,
-    );
-    ctx.restore();
+    ctx.fillStyle = 'rgb(0, 0, 0)';
+    const bb = frame.blackBorder;
+    const bx = contentX - bb;
+    const by = contentY - bb;
+    const bw = targetContentW + bb * 2;
+    const bh = targetContentH + bb * 2;
+    // Top bar
+    ctx.fillRect(bx, by, bw, bb);
+    // Bottom bar
+    ctx.fillRect(bx, by + bh - bb, bw, bb);
+    // Left bar
+    ctx.fillRect(bx, by + bb, bb, bh - bb * 2);
+    // Right bar
+    ctx.fillRect(bx + bw - bb, by + bb, bb, bh - bb * 2);
   }
 
   return {
