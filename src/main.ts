@@ -275,9 +275,25 @@ themeToggle?.addEventListener('click', () => {
 });
 
 // ── Skeleton loading state ──
+let skeletonTimer: ReturnType<typeof setTimeout> | null = null;
 function showSkeleton(show: boolean): void {
   const skeleton = document.getElementById('canvasSkeleton');
-  if (skeleton) skeleton.style.display = show ? 'block' : 'none';
+  if (!skeleton) return;
+
+  if (skeletonTimer) {
+    clearTimeout(skeletonTimer);
+    skeletonTimer = null;
+  }
+
+  if (show) {
+    skeletonTimer = setTimeout(() => {
+      skeleton.style.display = 'block';
+      skeletonTimer = null;
+    }, 180);
+    return;
+  }
+
+  skeleton.style.display = 'none';
 }
 
 // Expose skeleton control

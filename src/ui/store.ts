@@ -262,10 +262,11 @@ export function createStore(): AppStore {
         cachedRawPalette = extractPalette(img);
         paletteImageSrc = img.src;
 
-        this.readExifFromFile().then(() => {
-          this.updateAll();
-        });
         this.updateAll();
+        const timeBeforeExif = this.time;
+        this.readExifFromFile().then(() => {
+          if (this.time !== timeBeforeExif) this.updateAll();
+        });
         // Hide skeleton
         const hideSkel = (window as unknown as Record<string, unknown>).showSkeleton as ((s: boolean) => void) | undefined;
         if (hideSkel) hideSkel(false);
