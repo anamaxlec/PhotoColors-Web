@@ -35,7 +35,7 @@
           </button>
         </div>
 
-        <label class="upload-card" for="imageUpload">
+        <label class="upload-card" :class="{ 'is-loading': imageLoading }" :aria-busy="imageLoading" for="imageUpload">
           <div class="upload-ico" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none">
               <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -44,7 +44,7 @@
             </svg>
           </div>
           <div class="upload-copy">
-            <div class="upload-title">{{ image ? '更换照片' : '上传照片' }}</div>
+            <div class="upload-title">{{ imageLoading ? (image ? '更换中' : '上传中') : (image ? '更换照片' : '上传照片') }}</div>
             <div class="upload-sub">点击选择或直接拖拽 · PNG / JPG / WebP / HEIC</div>
           </div>
         </label>
@@ -363,9 +363,16 @@
           </div>
         </div>
 
-        <div class="preview-stage" id="dropZone">
+        <div class="preview-stage" id="dropZone" :class="{ 'is-loading': imageLoading, 'has-image': image }">
           <div class="skeleton skeleton-canvas" id="canvasSkeleton" style="display:none"></div>
-          <canvas id="previewCanvas" role="img" aria-label="照片色彩编辑器实时预览"></canvas>
+          <canvas id="previewCanvas" :class="{ 'is-transitioning': imageLoading }" role="img" aria-label="照片色彩编辑器实时预览"></canvas>
+          <div class="preview-loading" v-show="imageLoading" aria-hidden="true">
+            <div class="preview-loading-bar"></div>
+            <div class="preview-loading-copy">
+              <span>{{ image ? 'Replacing image' : 'Loading image' }}</span>
+              <strong>{{ imageName }}</strong>
+            </div>
+          </div>
           <div class="placeholder" id="placeholder">
             <div class="placeholder-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none">

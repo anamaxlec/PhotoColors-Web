@@ -35,6 +35,7 @@ let previewCtx: CanvasRenderingContext2D | null = null;
 let exportCtx: CanvasRenderingContext2D | null = null;
 let previewCanvas: HTMLCanvasElement | null = null;
 let exportCanvas: HTMLCanvasElement | null = null;
+let imageLoadSeq = 0;
 
 // P0-3: Palette cache — re-extract only when image changes
 let cachedRawPalette: { dominant: RgbColor; accent: RgbColor; sceneType: SceneType } | null = null;
@@ -87,6 +88,7 @@ export interface AppStore {
   originalFile: File | null;
   imageName: string;
   imageError: string;
+  imageLoading: boolean;
   // --- Palette ---
   sceneType: SceneType;
   palette: { bg: RgbColor; text: RgbColor; accent: RgbColor };
@@ -194,6 +196,7 @@ export function createStore(): AppStore {
     originalFile: null,
     imageName: 'photocolors-output',
     imageError: '',
+    imageLoading: false,
     sceneType: 'neutral' as SceneType,
     palette: { bg: defaultBg, text: defaultText, accent: defaultAccent },
     theme: 'auto' as ThemeName,
@@ -250,10 +253,24 @@ export function createStore(): AppStore {
     },
 
     loadImageFromFile(file: File) {
+      const loadSeq = ++imageLoadSeq;
+      const loadStart = performance.now();
+      const minLoadingMs = this.image ? 520 : 420;
       this.imageError = '';
+      this.imageLoading = true;
       const url = URL.createObjectURL(file);
       const img = new Image();
+      const finishLoading = () => {
+        const elapsed = performance.now() - loadStart;
+        window.setTimeout(() => {
+          if (imageLoadSeq === loadSeq) this.imageLoading = false;
+        }, Math.max(0, minLoadingMs - elapsed));
+      };
       img.onload = () => {
+        if (imageLoadSeq !== loadSeq) {
+          URL.revokeObjectURL(url);
+          return;
+        }
         this.image = img;
         this.originalFile = file;
         this.imageName = file.name.replace(/\.[^/.]+$/, '') || 'photocolors-output';
@@ -270,9 +287,12 @@ export function createStore(): AppStore {
         // Hide skeleton
         const hideSkel = (window as unknown as Record<string, unknown>).showSkeleton as ((s: boolean) => void) | undefined;
         if (hideSkel) hideSkel(false);
+        finishLoading();
       };
       img.onerror = () => {
+        if (imageLoadSeq !== loadSeq) return;
         this.imageError = '图片加载失败，请检查文件格式';
+        this.imageLoading = false;
         toast('图片加载失败，请检查文件格式', 'error');
         const hideSkel = (window as unknown as Record<string, unknown>).showSkeleton as ((s: boolean) => void) | undefined;
         if (hideSkel) hideSkel(false);
