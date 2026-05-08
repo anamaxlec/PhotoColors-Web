@@ -2265,8 +2265,8 @@ input[type="range"]::-moz-range-progress {
 }
 
 #previewCanvas {
-  max-width: min(72%, 74vh);
-  max-height: calc(100dvh - 156px);
+  max-width: min(88%, 88vh);
+  max-height: calc(100dvh - 112px);
   filter: drop-shadow(0 28px 80px rgba(25, 22, 18, 0.14));
   animation: pc-float-in 900ms 130ms var(--ease-out) both;
   transition: transform 800ms var(--ease-out), filter 800ms var(--ease-out);
@@ -2483,7 +2483,7 @@ input[type="range"]::-moz-range-progress {
   }
 
   #previewCanvas {
-    max-width: min(76%, 70vh);
+    max-width: min(84%, 80vh);
   }
 }
 
