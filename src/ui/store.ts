@@ -4,7 +4,7 @@ import type {
   Template, BatchTask, TemplateSettings,
 } from '@/core/types';
 import { extractPalette, updatePalette, rebuildPalette, THEMES } from '@/core/palette';
-import { renderToCanvas, create2DContext } from '@/core/renderer';
+import { renderToCanvas, create2DContext, measureRenderResult } from '@/core/renderer';
 import { rgbToHex, rgbToCss } from '@/core/color';
 import { readExif } from '@/features/exif/reader';
 import {
@@ -358,10 +358,11 @@ export function createStore(): AppStore {
 
       // P0-2: Only render preview canvas during editing; export canvas rendered on demand
       const previewResult = renderToCanvas(previewCtx, previewCanvas, this.image, options, 1080);
+      const exportResult = measureRenderResult(this.image, options, null) || previewResult;
 
-      if (previewResult) {
-        this.exportSize = `${previewResult.exportW} × ${previewResult.exportH}`;
-        this.previewMeta = `${previewResult.exportW} × ${previewResult.exportH}导出｜内容区${previewResult.contentW} × ${previewResult.contentH}｜原图${previewResult.photoW} × ${previewResult.photoH}｜${(themeLabels as Record<string, string>)[this.theme as string]}｜${this.sceneType}`;
+      if (exportResult) {
+        this.exportSize = `${exportResult.exportW} × ${exportResult.exportH}`;
+        this.previewMeta = `${exportResult.exportW} × ${exportResult.exportH}导出｜内容区${exportResult.contentW} × ${exportResult.contentH}｜原图${exportResult.photoW} × ${exportResult.photoH}｜${(themeLabels as Record<string, string>)[this.theme as string]}｜${this.sceneType}`;
         this.exportReady = true;
       }
 

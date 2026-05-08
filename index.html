@@ -6,8 +6,8 @@
   <title>PhotoColors — 照片色彩编辑器</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Gloock&family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css?v=20260507-exportfix2" />
 </head>
 <body>
   <div id="app">
@@ -343,21 +343,21 @@
           </div>
           <div class="preview-head-right">
             <span class="size-readout">{{ exportSize }}</span>
-            <button class="btn btn-tonal btn-sm" type="button" @click="recolor" :disabled="!exportReady">重新取色</button>
+            <button class="btn btn-tonal btn-sm" type="button" data-preview-action="recolor" @click="recolor" :disabled="!exportReady">重新取色</button>
             <div class="dropdown" :class="{ 'is-open': showExportMenu }">
-              <button class="btn btn-filled btn-sm" type="button" @click="showExportMenu = !showExportMenu" :disabled="!exportReady">
+              <button class="btn btn-filled btn-sm" type="button" data-preview-action="toggle-export" @click="showExportMenu = !showExportMenu" :disabled="!exportReady">
                 导出 ▾
               </button>
               <div class="dropdown-menu" v-if="showExportMenu" @click.stop>
-                <button class="dropdown-item" @click="handleExport(); showExportMenu = false">导出 PNG</button>
-                <button class="dropdown-item" @click="handleExport('image/webp'); showExportMenu = false">导出 WebP</button>
+                <button class="dropdown-item" data-export-format="image/png" @click="handleExport(); showExportMenu = false">导出 PNG</button>
+                <button class="dropdown-item" data-export-format="image/webp" @click="handleExport('image/webp'); showExportMenu = false">导出 WebP</button>
                 <div class="dropdown-divider"></div>
                 <div class="dropdown-label">尺寸预设</div>
-                <button class="dropdown-item" @click="handleExport(); showExportMenu = false">原始比例</button>
-                <button class="dropdown-item" @click="handleExport(undefined, 1080, 1440); showExportMenu = false">小红书 1080×1440</button>
-                <button class="dropdown-item" @click="handleExport(undefined, 1080, 1080); showExportMenu = false">Instagram 1:1</button>
-                <button class="dropdown-item" @click="handleExport(undefined, 1080, 1920); showExportMenu = false">Story 1080×1920</button>
-                <button class="dropdown-item" @click="handleExport(undefined, 1080, 1260); showExportMenu = false">朋友圈 1080×1260</button>
+                <button class="dropdown-item" data-export-format="image/png" @click="handleExport(); showExportMenu = false">原始比例</button>
+                <button class="dropdown-item" data-export-format="image/png" data-export-width="1080" data-export-height="1440" @click="handleExport(undefined, 1080, 1440); showExportMenu = false">小红书 1080×1440</button>
+                <button class="dropdown-item" data-export-format="image/png" data-export-width="1080" data-export-height="1080" @click="handleExport(undefined, 1080, 1080); showExportMenu = false">Instagram 1:1</button>
+                <button class="dropdown-item" data-export-format="image/png" data-export-width="1080" data-export-height="1920" @click="handleExport(undefined, 1080, 1920); showExportMenu = false">Story 1080×1920</button>
+                <button class="dropdown-item" data-export-format="image/png" data-export-width="1080" data-export-height="1260" @click="handleExport(undefined, 1080, 1260); showExportMenu = false">朋友圈 1080×1260</button>
               </div>
             </div>
           </div>

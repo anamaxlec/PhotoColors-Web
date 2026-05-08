@@ -87,24 +87,25 @@ export interface RenderResult {
   photoH: number;
 }
 
-export function renderToCanvas(
-  ctx: CanvasRenderingContext2D,
-  canvas: HTMLCanvasElement,
-  image: HTMLImageElement | null,
+interface RenderLayout extends RenderResult {
+  scale: number;
+  targetContentW: number;
+  targetContentH: number;
+  contentX: number;
+  contentY: number;
+  frame: FrameSettings;
+}
+
+type RenderImage = Pick<HTMLImageElement, 'width' | 'height'> & Partial<Pick<HTMLImageElement, 'naturalWidth' | 'naturalHeight'>>;
+
+function calculateRenderLayout(
+  image: RenderImage,
   options: RenderOptions,
   maxPreviewWidth: number | null = null,
-): RenderResult | null {
-  if (!image) {
-    canvas.width = 960;
-    canvas.height = 540;
-    ctx.fillStyle = '#eff3f8';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    return null;
-  }
-
+): RenderLayout {
   // Support both HTMLImageElement (naturalWidth) and ImageBitmap (width)
-  const photoW = (image as HTMLImageElement).naturalWidth || (image as HTMLImageElement).width;
-  const photoH = (image as HTMLImageElement).naturalHeight || (image as HTMLImageElement).height;
+  const photoW = image.naturalWidth || image.width;
+  const photoH = image.naturalHeight || image.height;
   const showColorBg = options.showColorBg !== false;
   const contentW = photoW;
   const contentH = showColorBg ? photoH * 2 : photoH;
@@ -138,6 +139,70 @@ export function renderToCanvas(
     targetH = options.targetHeight;
     scale *= fitScale;
   }
+
+  return {
+    exportW: targetW,
+    exportH: targetH,
+    contentW,
+    contentH,
+    photoW,
+    photoH,
+    scale,
+    targetContentW,
+    targetContentH,
+    contentX,
+    contentY,
+    frame,
+  };
+}
+
+export function measureRenderResult(
+  image: HTMLImageElement | null,
+  options: RenderOptions,
+  maxPreviewWidth: number | null = null,
+): RenderResult | null {
+  if (!image) return null;
+  const layout = calculateRenderLayout(image, options, maxPreviewWidth);
+  return {
+    exportW: layout.exportW,
+    exportH: layout.exportH,
+    contentW: layout.contentW,
+    contentH: layout.contentH,
+    photoW: layout.photoW,
+    photoH: layout.photoH,
+  };
+}
+
+export function renderToCanvas(
+  ctx: CanvasRenderingContext2D,
+  canvas: HTMLCanvasElement,
+  image: HTMLImageElement | null,
+  options: RenderOptions,
+  maxPreviewWidth: number | null = null,
+): RenderResult | null {
+  if (!image) {
+    canvas.width = 960;
+    canvas.height = 540;
+    ctx.fillStyle = '#eff3f8';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    return null;
+  }
+
+  const {
+    exportW: targetW,
+    exportH: targetH,
+    contentW,
+    contentH,
+    photoW,
+    photoH,
+    scale,
+    targetContentW,
+    targetContentH,
+    contentX,
+    contentY,
+    frame,
+  } = calculateRenderLayout(image, options, maxPreviewWidth);
+  const showColorBg = options.showColorBg !== false;
 
   canvas.width = targetW;
   canvas.height = targetH;
